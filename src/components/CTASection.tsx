@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, Twitter, Github, ChevronRight } from 'lucide-react';
+import { Github, ChevronRight } from 'lucide-react';
 
 interface CTASectionProps {
   setActiveSection: (sec: string) => void;
@@ -9,9 +9,7 @@ export default function CTASection({ setActiveSection }: CTASectionProps) {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
   const socials = [
-    { name: 'Mail', icon: Mail, href: 'mailto:sustain@ecotrace.io' },
-    { name: 'Twitter', icon: Twitter, href: 'https://twitter.com' },
-    { name: 'Github', icon: Github, href: 'https://github.com' },
+    { name: 'Github', icon: Github, href: 'https://github.com/ClashLex/ValenQuotient.git' },
   ];
 
   const faqs = [

@@ -1,4 +1,4 @@
-import { Mail, Twitter, Github, Award, Compass, BarChart3 } from 'lucide-react';
+import { Github, Award, Compass, BarChart3 } from 'lucide-react';
 
 interface HeroSectionProps {
   setActiveSection: (sec: string) => void;
@@ -6,9 +6,7 @@ interface HeroSectionProps {
 
 export default function HeroSection({ setActiveSection }: HeroSectionProps) {
   const socials = [
-    { name: 'Twitter', icon: Twitter, href: 'https://twitter.com', label: '@ecotrace_platform' },
-    { name: 'Github', icon: Github, href: 'https://github.com', label: 'ecotrace-app-core' },
-    { name: 'Mail', icon: Mail, href: 'mailto:sustain@ecotrace.io', label: 'sustain@ecotrace.io' },
+    { name: 'Github', icon: Github, href: 'https://github.com/ClashLex/ValenQuotient.git', label: 'ValenQuotient repository' },
   ];
 
   const highlights = [
