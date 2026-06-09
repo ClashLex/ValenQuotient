@@ -132,7 +132,7 @@ export default function App() {
           {/* Logo Brand info */}
           <div className="flex items-center gap-2">
             <h1 className="font-grotesk text-sm sm:text-base tracking-widest uppercase text-cream font-bold leading-none">
-              VALENTQUOTIENT
+              VALENQUOTIENT
             </h1>
             <span className="hidden sm:inline-block font-mono text-[7px] bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded px-1.5 py-0.5 tracking-wider font-bold whitespace-nowrap">
               VERIFIED CARBON DATA

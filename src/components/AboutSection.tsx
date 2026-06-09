@@ -79,7 +79,7 @@ export default function AboutSection({ setActiveSection }: AboutSectionProps) {
             </span>
             {/* Heading — simplified to avoid overflow on mobile */}
             <h2 className="font-grotesk text-[22px] sm:text-[34px] md:text-[42px] lg:text-[54px] uppercase leading-none tracking-tight">
-              WHY VALENTQUOTIENT{' '}
+              WHY VALENQUOTIENT{' '}
               <span className="font-condiment text-[24px] sm:text-[40px] md:text-[48px] lg:text-[62px] text-neon leading-none normal-case glow-text-neon">
                 Intercepts
               </span>{' '}
@@ -178,7 +178,7 @@ export default function AboutSection({ setActiveSection }: AboutSectionProps) {
             {/* Visual Flow diagram */}
             <div className="liquid-glass rounded-2xl p-5 sm:p-6 border border-white/5 relative overflow-hidden flex flex-col justify-between bg-white/[0.01]">
               <span className="font-mono text-[10px] text-neon uppercase tracking-widest mb-4 block">
-                [ VALENTQUOTIENT LOGICAL CORE ENGINE ]
+                [ VALENQUOTIENT LOGICAL CORE ENGINE ]
               </span>
               
               <div className="space-y-4 relative z-10 w-full">
@@ -215,7 +215,7 @@ export default function AboutSection({ setActiveSection }: AboutSectionProps) {
               <div>
                 <span className="font-mono text-[10px] text-[#b724ff] uppercase tracking-widest">PROPULSIVE REMEDIATION</span>
                 <h3 className="font-grotesk text-xl sm:text-3xl text-cream tracking-wide uppercase mt-1 mb-4">
-                  ValentQuotient — Carbon Intelligence Protocol
+                  ValenQuotient — Carbon Intelligence Protocol
                 </h3>
                 <p className="font-mono text-[11px] uppercase tracking-wide leading-relaxed text-[#9cb4e5] mb-5">
                   A unified environmental tracking framework. Granular user profiling, instant calculations, and smart goals build accountability loops for a greener planetary balance.

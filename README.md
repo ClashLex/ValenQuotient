@@ -1,8 +1,8 @@
-# ValentQuotient Eco Hub
+# ValenQuotient Eco Hub
 
-ValentQuotient is an ultra-premium, interactive climate awareness and carbon footprint analysis application designed specifically for mobile and responsive web devices. It utilizes high-contrast dark space aesthetics, futuristic "liquid glass" visual cards, and high-fidelity simulated real-time calculator telemetry.
+ValenQuotient is an ultra-premium, interactive climate awareness and carbon footprint analysis application designed specifically for mobile and responsive web devices. It utilizes high-contrast dark space aesthetics, futuristic "liquid glass" visual cards, and high-fidelity simulated real-time calculator telemetry.
 
-With ValentQuotient, users can model, understand, and visualize the impact of their daily commutes, dietary profiles, and residential power grids guided by the Intergovernmental Panel on Climate Change (IPCC-2026-GS-VERRA) standards.
+With ValenQuotient, users can model, understand, and visualize the impact of their daily commutes, dietary profiles, and residential power grids guided by the Intergovernmental Panel on Climate Change (IPCC-2026-GS-VERRA) standards.
 
 ---
 

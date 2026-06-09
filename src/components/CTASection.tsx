@@ -58,7 +58,7 @@ export default function CTASection({ setActiveSection }: CTASectionProps) {
             CARBON INTELLIGENCE ADVISORY
           </span>
           <h2 className="font-grotesk text-[22px] sm:text-[32px] md:text-[40px] uppercase leading-tight tracking-wide text-cream">
-            <span className="block text-neon glow-text-neon">JOIN VALENTQUOTIENT</span>
+            <span className="block text-neon glow-text-neon">JOIN VALENQUOTIENT</span>
             REPAIR WHAT IS BROKEN.
           </h2>
           <p className="font-mono text-[10px] uppercase tracking-wide leading-relaxed text-[#9cb4e5]/80 mt-2 max-w-md">
@@ -148,7 +148,7 @@ export default function CTASection({ setActiveSection }: CTASectionProps) {
 
         {/* Fine-print footer */}
         <div className="w-full border-t border-white/5 pt-4 flex flex-col sm:flex-row justify-between items-center gap-2 text-[#9cb4e5]/30 text-[8px] font-mono tracking-widest">
-          <span>© 2026 VALENTQUOTIENT GLOBAL ADVISORY CO. ALL RIGHTS RESERVED</span>
+          <span>© 2026 VALENQUOTIENT GLOBAL ADVISORY CO. ALL RIGHTS RESERVED</span>
           <span>STANDARDS ACCREDITATION: CLIMATE.IO GS-VERRA</span>
         </div>
       </div>

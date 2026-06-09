@@ -49,7 +49,7 @@ export default function HeroSection({ setActiveSection }: HeroSectionProps) {
           <div className="flex-1 min-w-0">
             {/* Accent cursive - inline above heading to avoid z-overflow */}
             <span className="font-condiment text-[22px] sm:text-[30px] md:text-[36px] text-neon glow-text-neon -rotate-2 inline-block mb-1 tracking-wide select-none leading-tight">
-              ValentQuotient app
+              ValenQuotient app
             </span>
             <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-neon mb-2 block animate-pulse">
               [ BASELINE EMISSIONS SYSTEM ]
