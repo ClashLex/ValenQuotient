@@ -1,0 +1,6 @@
+{
+  "name": "ValentQuotient",
+  "description": "EcoTrace - An ultra-modern carbon footprint and climate awareness platform designed with space aesthetics, interactive live calculators, and personalized AI insights.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

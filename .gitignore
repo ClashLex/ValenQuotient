@@ -1,0 +1,16 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Excluded documentation files
+image.md
+elements.md
+WALKTHROUGH.md
+walkthrough.md
+DESIGN.md
+design.md
