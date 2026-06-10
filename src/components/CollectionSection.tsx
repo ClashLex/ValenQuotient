@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ChevronRight, 
   Sparkles, 
@@ -7,6 +7,11 @@ import {
   MoreVertical,
 } from 'lucide-react';
 import { CarbonCategory } from '../types';
+import {
+  TRANSPORT_BASE_RATE,
+  DIET_EMISSION_SCORES,
+  ENERGY_BASE_RATE,
+} from '../constants/emissions';
 
 interface CollectionSectionProps {
   onSelectNFT: (nft: CarbonCategory) => void;
@@ -17,6 +22,53 @@ interface CollectionSectionProps {
   energyKwh: number;
   setEnergyKwh: (val: number) => void;
 }
+
+const categories: CarbonCategory[] = [
+    {
+      id: "eco-01",
+      title: "DAILY COMMUTE FOOTPRINT",
+      impactScore: "8.7/10",
+      videoUrl: "/images/commute.webp", 
+      description: "Calculate your transportation emissions based on daily mileage, vehicle combustion class, and passenger travel patterns.",
+      category: 'Transport',
+      unit: "Miles / Day",
+      baseRate: TRANSPORT_BASE_RATE, 
+      specs: ["Vehicle: Gasoline Passenger Car", "Type: Ground Urban Commute", "Range: Short/Medium Distance"],
+      year: "2026"
+    },
+    {
+      id: "eco-02",
+      title: "FOOD & DIET FOOTPRINT",
+      impactScore: "9.0/10",
+      videoUrl: "/images/diet.webp", 
+      description: "Track the environmental impact of your daily dietary profile. Animal proteins have a heavy carbon footprint, while organic plant-based diets approach zero.",
+      category: 'Diet',
+      unit: "Meal Category",
+      baseRate: 1, 
+      specs: ["Sourcing: Urban & Conventional Agriculture", "Organic Content: Approx. 40%", "Supply Chain: Local/Regional Sourcing"],
+      year: "2026"
+    },
+    {
+      id: "eco-03",
+      title: "HOUSEHOLD UTILITIES FOOTPRINT",
+      impactScore: "8.2/10",
+      videoUrl: "/images/energy.webp", 
+      description: "Aggregate your home electricity use, heating metrics, and baseline vampire power leaks to track utility emissions.",
+      category: 'Energy',
+      unit: "kWh / Month",
+      baseRate: ENERGY_BASE_RATE, 
+      specs: ["Energy Grid: Mixed Fossil & Clean Fuel", "Renewable Power Ratio: Approx. 15%", "Standby Vampire Loads Included"],
+      year: "2026"
+    }
+  ];
+
+  const challenges = [
+    { id: 'ch-01', title: 'WALK THE MILE TODAY', points: 30, cat: 'Transport', impact: 'Reduce travel emissions by walking commutes < 1.5 miles' },
+    { id: 'ch-02', title: 'PLANT-BASED HIGH PERFORMANCE', points: 40, cat: 'Diet', impact: 'Swap all bovine ingredients for organic greens for entire day' },
+    { id: 'ch-03', title: 'UNPLUG STANDBY TV HUBS', points: 20, cat: 'Energy', impact: 'Turn off entertainment system grids completely at outlet' },
+    { id: 'ch-04', title: 'LAUNDRY AT COLD TEMPERATURES', points: 25, cat: 'Energy', impact: 'Set washing machine metrics to cold 30°C to bypass heaters' },
+    { id: 'ch-05', title: 'PASSENGER CARPOOL INBOUND', points: 35, cat: 'Transport', impact: 'Rideshare to workplace nodes to split commuter metrics by 50%' }
+  ];
 
 export default function CollectionSection({
   onSelectNFT,
@@ -40,90 +92,123 @@ export default function CollectionSection({
   const [completedChallenges, setCompletedChallenges] = useState<string[]>([]);
   const [mobShowThread, setMobShowThread] = useState<boolean>(false);
 
-  const categories: CarbonCategory[] = [
-    {
-      id: "eco-01",
-      title: "DAILY COMMUTE FOOTPRINT",
-      impactScore: "8.7/10",
-      videoUrl: "/images/commute.png", 
-      description: "Calculate your transportation emissions based on daily mileage, vehicle combustion class, and passenger travel patterns.",
-      category: 'Transport',
-      unit: "Miles / Day",
-      baseRate: 0.411, 
-      specs: ["Vehicle: Gasoline Passenger Car", "Type: Ground Urban Commute", "Range: Short/Medium Distance"],
-      year: "2026"
-    },
-    {
-      id: "eco-02",
-      title: "FOOD & DIET FOOTPRINT",
-      impactScore: "9.0/10",
-      videoUrl: "/images/diet.png", 
-      description: "Track the environmental impact of your daily dietary profile. Animal proteins have a heavy carbon footprint, while organic plant-based diets approach zero.",
-      category: 'Diet',
-      unit: "Meal Category",
-      baseRate: 1, 
-      specs: ["Sourcing: Urban & Conventional Agriculture", "Organic Content: Approx. 40%", "Supply Chain: Local/Regional Sourcing"],
-      year: "2026"
-    },
-    {
-      id: "eco-03",
-      title: "HOUSEHOLD UTILITIES FOOTPRINT",
-      impactScore: "8.2/10",
-      videoUrl: "/images/energy.png", 
-      description: "Aggregate your home electricity use, heating metrics, and baseline vampire power leaks to track utility emissions.",
-      category: 'Energy',
-      unit: "kWh / Month",
-      baseRate: 0.384, 
-      specs: ["Energy Grid: Mixed Fossil & Clean Fuel", "Renewable Power Ratio: Approx. 15%", "Standby Vampire Loads Included"],
-      year: "2026"
-    }
-  ];
+  // Local state for dragging sliders smoothly
+  const [localCommute, setLocalCommute] = useState(commuteMiles);
+  const [localEnergy, setLocalEnergy] = useState(energyKwh);
 
-  const challenges = [
-    { id: 'ch-01', title: 'WALK THE MILE TODAY', points: 30, cat: 'Transport', impact: 'Reduce travel emissions by walking commutes < 1.5 miles' },
-    { id: 'ch-02', title: 'PLANT-BASED HIGH PERFORMANCE', points: 40, cat: 'Diet', impact: 'Swap all bovine ingredients for organic greens for entire day' },
-    { id: 'ch-03', title: 'UNPLUG STANDBY TV HUBS', points: 20, cat: 'Energy', impact: 'Turn off entertainment system grids completely at outlet' },
-    { id: 'ch-04', title: 'LAUNDRY AT COLD TEMPERATURES', points: 25, cat: 'Energy', impact: 'Set washing machine metrics to cold 30°C to bypass heaters' },
-    { id: 'ch-05', title: 'PASSENGER CARPOOL INBOUND', points: 35, cat: 'Transport', impact: 'Rideshare to workplace nodes to split commuter metrics by 50%' }
-  ];
+  // Sync local sliders when parent props change (e.g. initial render)
+  useEffect(() => {
+    setLocalCommute(commuteMiles);
+  }, [commuteMiles]);
 
-  const getOutputCo2 = (category: CarbonCategory) => {
+  useEffect(() => {
+    setLocalEnergy(energyKwh);
+  }, [energyKwh]);
+
+  // Debounced parent setters to prevent UI lag during slider drags
+  const debouncedSetCommuteMiles = useMemo(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    return (val: number) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        setCommuteMiles(val);
+      }, 100);
+    };
+  }, [setCommuteMiles]);
+
+  const debouncedSetEnergyKwh = useMemo(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    return (val: number) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        setEnergyKwh(val);
+      }, 100);
+    };
+  }, [setEnergyKwh]);
+
+  /**
+   * Calculates carbon emissions in kg per day for a specific category.
+   * @param {CarbonCategory} category - The carbon category tracker configuration.
+   * @returns {string} The formatted carbon emission value in kg.
+   */
+  const getOutputCo2 = (category: CarbonCategory): string => {
     if (category.category === 'Transport') return (commuteMiles * category.baseRate).toFixed(1);
-    if (category.category === 'Diet') return ({ vegan: 1.5, vegetarian: 2.8, meat: 7.4 })[dietSelection].toFixed(1);
+    if (category.category === 'Diet') return DIET_EMISSION_SCORES[dietSelection].toFixed(1);
     if (category.category === 'Energy') return ((energyKwh / 30) * category.baseRate).toFixed(1);
     return "0.0";
   };
 
-  const getUnitString = (category: CarbonCategory) => {
+  /**
+   * Formats the unit display label for a carbon category.
+   * @param {CarbonCategory} category - The carbon category tracker configuration.
+   * @returns {string} Text combining the current value and unit.
+   */
+  const getUnitString = (category: CarbonCategory): string => {
     if (category.category === 'Transport') return `${commuteMiles} ${category.unit}`;
     if (category.category === 'Diet') return dietSelection.toUpperCase();
     if (category.category === 'Energy') return `${energyKwh} ${category.unit}`;
     return '';
   };
 
-  const baseTotalCo2 = commuteMiles * 0.411 + ({ vegan: 1.5, vegetarian: 2.8, meat: 7.4 })[dietSelection] + (energyKwh / 30) * 0.384;
-  const activeReduction = completedChallenges.reduce((acc, id) => {
-    const ch = challenges.find(c => c.id === id);
-    return ch ? acc + ch.points * 0.05 : acc;
-  }, 0);
-  const offsetReduction = offsetTons * 2.73;
-  const rawFinalCo2 = baseTotalCo2 - activeReduction - offsetReduction;
-  const totalCo2 = rawFinalCo2 > 0 ? rawFinalCo2.toFixed(1) : "0.0";
+  // Memoize total daily carbon baseline computation
+  const baseTotalCo2 = useMemo(() => {
+    return (
+      commuteMiles * TRANSPORT_BASE_RATE +
+      DIET_EMISSION_SCORES[dietSelection] +
+      (energyKwh / 30) * ENERGY_BASE_RATE
+    );
+  }, [commuteMiles, dietSelection, energyKwh]);
 
+  // Memoize daily active reductions
+  const activeReduction = useMemo(() => {
+    return completedChallenges.reduce((acc, id) => {
+      const ch = challenges.find(c => c.id === id);
+      return ch ? acc + ch.points * 0.05 : acc;
+    }, 0);
+  }, [completedChallenges]);
+
+  // Memoize purchased offsets volume
+  const offsetReduction = useMemo(() => {
+    return offsetTons * 2.73;
+  }, [offsetTons]);
+
+  // Memoize final carbon calculation
+  const totalCo2 = useMemo(() => {
+    const rawFinalCo2 = baseTotalCo2 - activeReduction - offsetReduction;
+    return rawFinalCo2 > 0 ? rawFinalCo2.toFixed(1) : "0.0";
+  }, [baseTotalCo2, activeReduction, offsetReduction]);
+
+  /**
+   * Sanitizes and adds a new green pledge to the community feed.
+   */
   const handleAddPledge = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPledge.trim()) return;
-    setPledges([newPledge.toUpperCase(), ...pledges]);
+
+    // Strip HTML elements to protect against basic XSS injection
+    const sanitized = newPledge.replace(/<[^>]*>/g, '').trim();
+    if (!sanitized) return;
+
+    setPledges([sanitized.toUpperCase(), ...pledges]);
     setNewPledge("");
   };
 
+  /**
+   * Toggles completion status of a daily challenge item.
+   */
   const toggleChallenge = (id: string) => {
     setCompletedChallenges(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
   const currentCategory = categories.find(c => c.id === selectedChatId) || categories[0];
 
-  const tabModes = [
+  interface TabModeItem {
+    id: 'chats' | 'status' | 'channels';
+    label: string;
+    fullLabel: string;
+  }
+
+  const tabModes: TabModeItem[] = [
     { id: 'chats', label: '💬 Calc', fullLabel: 'Calculators' },
     { id: 'status', label: '📊 Trend', fullLabel: 'Weekly Trend' },
     { id: 'channels', label: '🌿 Offsets', fullLabel: 'Offsets & Goals' },
@@ -139,12 +224,14 @@ export default function CollectionSection({
           {tabModes.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTabMode(tab.id as any)}
+              onClick={() => setActiveTabMode(tab.id)}
               className={`px-2.5 py-1.5 rounded-lg text-left transition-all duration-300 whitespace-nowrap shrink-0 ${
                 activeTabMode === tab.id
                   ? 'bg-neon/15 text-neon border border-neon/30 shadow-[0_0_8px_rgba(111,255,0,0.1)]'
                   : 'text-cream/50 hover:text-cream/80 border border-transparent'
               }`}
+              aria-selected={activeTabMode === tab.id}
+              role="tab"
             >
               <span className="font-grotesk text-[10px] sm:text-xs tracking-wider uppercase font-bold">{tab.label}</span>
             </button>
@@ -189,7 +276,8 @@ export default function CollectionSection({
                       <div className="w-9 h-9 rounded-full border border-white/10 overflow-hidden relative shrink-0">
                         <img 
                           src={cat.videoUrl} 
-                          alt={cat.category}
+                          alt={`${cat.category} footprint icon`}
+                          loading="lazy"
                           className="w-full h-full object-cover grayscale"
                           referrerPolicy="no-referrer"
                         />
@@ -233,11 +321,12 @@ export default function CollectionSection({
                     onClick={() => setMobShowThread(false)} 
                     className="md:hidden p-1 rounded hover:bg-white/5 text-[#9cb4e5] hover:text-cream transition-colors cursor-pointer shrink-0"
                     title="Back to chats list"
+                    aria-label="Back to chats list"
                   >
-                    <ChevronRight className="rotate-180" size={16} />
+                    <ChevronRight className="rotate-180" size={16} aria-hidden="true" />
                   </button>
                   <div className="w-7 h-7 rounded-full overflow-hidden border border-white/5 shrink-0">
-                    <img src={currentCategory.videoUrl} alt={currentCategory.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img src={currentCategory.videoUrl} alt={currentCategory.title} loading="lazy" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
                   <div className="min-w-0">
                     <span className="font-grotesk text-[11px] font-bold uppercase tracking-wide block truncate">
@@ -283,13 +372,19 @@ export default function CollectionSection({
 
                     {currentCategory.category === 'Transport' && (
                       <div className="space-y-1.5">
+                        <label htmlFor="commute-slider" className="sr-only">Commute Miles per Day</label>
                         <input
-                          type="range" min="0" max="100" value={commuteMiles}
-                          onChange={(e) => setCommuteMiles(Number(e.target.value))}
+                          id="commute-slider"
+                          type="range" min="0" max="100" value={localCommute}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setLocalCommute(val);
+                            debouncedSetCommuteMiles(val);
+                          }}
                           className="w-full accent-neon cursor-pointer h-1.5 bg-[#010828] border border-white/15 rounded-lg outline-none"
                         />
                         <div className="flex justify-between font-mono text-[8px] text-cream/40 uppercase">
-                          <span>0</span><span>{commuteMiles} MI</span><span>100</span>
+                          <span>0</span><span>{localCommute} MI</span><span>100</span>
                         </div>
                       </div>
                     )}
@@ -299,6 +394,7 @@ export default function CollectionSection({
                         {(['vegan', 'vegetarian', 'meat'] as const).map((mode) => (
                           <button
                             key={mode}
+                            type="button"
                             onClick={() => setDietSelection(mode)}
                             className={`py-2 rounded-xl text-[9px] font-mono border transition-all uppercase ${
                               dietSelection === mode
@@ -314,13 +410,19 @@ export default function CollectionSection({
 
                     {currentCategory.category === 'Energy' && (
                       <div className="space-y-1.5">
+                        <label htmlFor="energy-slider" className="sr-only">Household Energy Monthly (kWh)</label>
                         <input
-                          type="range" min="10" max="600" step="10" value={energyKwh}
-                          onChange={(e) => setEnergyKwh(Number(e.target.value))}
+                          id="energy-slider"
+                          type="range" min="10" max="600" step="10" value={localEnergy}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setLocalEnergy(val);
+                            debouncedSetEnergyKwh(val);
+                          }}
                           className="w-full accent-neon cursor-pointer h-1.5 bg-[#010828] border border-white/15 rounded-lg outline-none"
                         />
                         <div className="flex justify-between font-mono text-[8px] text-cream/40 uppercase">
-                          <span>10</span><span>{energyKwh} KWH</span><span>600</span>
+                          <span>10</span><span>{localEnergy} KWH</span><span>600</span>
                         </div>
                       </div>
                     )}
@@ -374,8 +476,9 @@ export default function CollectionSection({
                   type="submit"
                   className="bg-neon hover:bg-neon/90 text-[#010828] rounded-xl px-3 flex items-center justify-center hover:scale-105 active:scale-95 transition-all font-bold shrink-0"
                   title="Submit pledge"
+                  aria-label="Submit pledge"
                 >
-                  <Plus size={16} />
+                  <Plus size={16} aria-hidden="true" />
                 </button>
               </form>
             </div>
@@ -467,10 +570,11 @@ export default function CollectionSection({
                 
                 <div className="space-y-3 bg-[#010828] border border-white/5 p-4 rounded-xl mb-4">
                   <div className="flex justify-between font-mono text-[10px] text-cream/55 uppercase">
-                    <span>Offset Volume:</span>
+                    <label htmlFor="offset-slider" className="mb-0">Offset Volume:</label>
                     <span className="text-neon">{offsetTons} Tons CO₂</span>
                   </div>
                   <input
+                    id="offset-slider"
                     type="range" min="0" max="10" step="1" value={offsetTons}
                     onChange={(e) => setOffsetTons(Number(e.target.value))}
                     className="w-full accent-neon cursor-pointer h-1.5 bg-white/10 rounded-lg outline-none"
@@ -485,16 +589,18 @@ export default function CollectionSection({
                   {challenges.slice(0, 3).map((ch) => {
                     const isCompleted = completedChallenges.includes(ch.id);
                     return (
-                      <div 
+                      <button 
                         key={ch.id} 
+                        type="button"
                         onClick={() => toggleChallenge(ch.id)}
-                        className={`p-2.5 rounded-xl border border-white/5 flex justify-between items-center cursor-pointer font-mono text-[10px] ${
+                        className={`w-full text-left p-2.5 rounded-xl border border-white/5 flex justify-between items-center cursor-pointer font-mono text-[10px] focus:outline-none focus:border-neon ${
                           isCompleted ? 'bg-neon/10 border-neon/30 text-cream' : 'bg-transparent text-cream/60 hover:border-white/15'
                         }`}
+                        aria-pressed={isCompleted}
                       >
                         <span className="uppercase truncate pr-4">{ch.title}</span>
                         <span className="text-neon shrink-0">-{(ch.points * 0.05).toFixed(1)} KG</span>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>

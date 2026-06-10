@@ -1,17 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { 
   Home, 
   BarChart3, 
   MessageSquare, 
-  HelpCircle, 
-  Radio
+  HelpCircle
 } from 'lucide-react';
 import HeroSection from './components/HeroSection';
-import AboutSection from './components/AboutSection';
-import CollectionSection from './components/CollectionSection';
-import CTASection from './components/CTASection';
-import NFTModal from './components/NFTModal';
+import { Sidebar } from './components/Sidebar';
+import AdvisoryModal from './components/AdvisoryModal';
+import LoadingSpinner from './components/LoadingSpinner';
 import { CarbonCategory } from './types';
+
+const AboutSection = lazy(() => import('./components/AboutSection'));
+const CollectionSection = lazy(() => import('./components/CollectionSection'));
+const CTASection = lazy(() => import('./components/CTASection'));
 
 export default function App() {
   const [activeSection, setActiveSection] = useState<string>('home');
@@ -73,53 +75,7 @@ export default function App() {
       {/* =========================================================================
           1. PERSISTENT LEFT SIDE NAVIGATION RAIL (Desktop mode)
           ========================================================================= */}
-      <aside className="hidden md:flex flex-col w-[72px] lg:w-[84px] h-full bg-[#00041d] border-r border-white/5 py-5 justify-between items-center shrink-0 z-30 relative shadow-2xl">
-        
-        {/* Top App Avatar / Logo Badge */}
-        <div className="flex flex-col items-center gap-1.5 focus:outline-none">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-neon to-emerald-500 p-0.5 flex items-center justify-center shadow-lg shadow-neon/10 hover:scale-105 transition-transform duration-300">
-            <div className="w-full h-full rounded-xl bg-[#010828] flex items-center justify-center font-bold font-grotesk text-neon text-sm">
-              VQ
-            </div>
-          </div>
-          <span className="w-2 h-2 rounded-full bg-neon animate-pulse shadow-[0_0_8px_#6FFF00]" />
-        </div>
-
-        {/* Mid Navigation Tab Icons Stack */}
-        <nav className="flex flex-col gap-4 w-full px-3">
-          {tabs.map((tab) => {
-            const isActive = activeSection === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveSection(tab.id)}
-                className={`w-full aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 transition-all duration-300 cursor-pointer relative group ${
-                  isActive
-                    ? 'bg-neon/10 border border-neon/30 text-neon shadow-[0_0_12px_rgba(111,255,0,0.15)]'
-                    : 'text-[#9cb4e5]/70 hover:bg-white/5 hover:text-cream border border-transparent'
-                }`}
-                title={tab.label}
-              >
-                <tab.icon size={18} className={isActive ? 'scale-110 text-neon' : 'group-hover:scale-105 transition-transform'} />
-                <span className="font-mono text-[7px] uppercase tracking-widest leading-none mt-0.5 scale-90">{isActive ? 'OPEN' : tab.num}</span>
-
-                {/* Cyber Hover Tooltip */}
-                <span className="absolute left-[80px] bg-[#00041d] border border-white/10 text-neon font-mono text-[8px] uppercase tracking-widest px-2.5 py-1 rounded shadow-xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-40">
-                  {tab.label}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Bottom Panel Status Indicators */}
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex flex-col items-center gap-1 font-mono text-[8.5px] text-[#9cb4e5]/40 uppercase tracking-widest">
-            <Radio size={14} className="text-neon/50 animate-pulse" />
-            <span>NODE</span>
-          </div>
-        </div>
-      </aside>
+      <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} />
 
       {/* =========================================================================
           2. MAIN CONTENT WINDOW AREA
@@ -148,39 +104,41 @@ export default function App() {
         </header>
 
         {/* Global Active Screen Workspace */}
-        <main className="flex-grow overflow-hidden relative flex flex-col min-h-0 p-1 sm:p-3">
+        <main className="flex-grow overflow-hidden relative flex flex-col min-h-0 p-1 sm:p-3" role="main">
           <div className={`flex-grow rounded-xl border border-white/5 bg-[#010828]/40 flex flex-col min-h-0 ${
             activeSection === 'trackers' ? 'overflow-hidden' : 'overflow-y-auto'
           }`}>
             <div className={`${activeSection === 'trackers' ? 'h-full flex flex-col min-h-0' : 'min-h-full'} p-2 sm:p-3`}>
-              {activeSection === 'home' && (
-                <div className="animate-in fade-in zoom-in-98 duration-300">
-                  <HeroSection setActiveSection={setActiveSection} />
-                </div>
-              )}
-              {activeSection === 'analysis' && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                  <AboutSection setActiveSection={setActiveSection} />
-                </div>
-              )}
-              {activeSection === 'trackers' && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 h-full flex flex-col min-h-0">
-                  <CollectionSection 
-                    onSelectNFT={setSelectedCategory}
-                    commuteMiles={commuteMiles}
-                    setCommuteMiles={setCommuteMiles}
-                    dietSelection={dietSelection}
-                    setDietSelection={setDietSelection}
-                    energyKwh={energyKwh}
-                    setEnergyKwh={setEnergyKwh}
-                  />
-                </div>
-              )}
-              {activeSection === 'advisory' && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
-                  <CTASection setActiveSection={setActiveSection} />
-                </div>
-              )}
+              <Suspense fallback={<LoadingSpinner />}>
+                {activeSection === 'home' && (
+                  <div className="animate-in fade-in zoom-in-98 duration-300">
+                    <HeroSection setActiveSection={setActiveSection} />
+                  </div>
+                )}
+                {activeSection === 'analysis' && (
+                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <AboutSection setActiveSection={setActiveSection} />
+                  </div>
+                )}
+                {activeSection === 'trackers' && (
+                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 h-full flex flex-col min-h-0">
+                    <CollectionSection 
+                      onSelectNFT={setSelectedCategory}
+                      commuteMiles={commuteMiles}
+                      setCommuteMiles={setCommuteMiles}
+                      dietSelection={dietSelection}
+                      setDietSelection={setDietSelection}
+                      energyKwh={energyKwh}
+                      setEnergyKwh={setEnergyKwh}
+                    />
+                  </div>
+                )}
+                {activeSection === 'advisory' && (
+                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <CTASection />
+                  </div>
+                )}
+              </Suspense>
             </div>
           </div>
         </main>
@@ -219,7 +177,7 @@ export default function App() {
       </div>
 
       {/* Dynamic Interaction Modals */}
-      <NFTModal
+      <AdvisoryModal
         categoryItem={selectedCategory}
         onClose={() => setSelectedCategory(null)}
         commuteMiles={commuteMiles}

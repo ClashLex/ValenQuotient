@@ -57,9 +57,7 @@ export default function HeroSection({ setActiveSection }: HeroSectionProps) {
               MULTIPLIED BY ( YOUR ) <br />
               DAILY HABITS
             </h1>
-          </div>
-
-          {/* Social icons - desktop only */}
+          </div>          {/* Social icons - desktop only */}
           <div className="hidden md:flex gap-3 shrink-0 pt-2">
             {socials.map((social) => (
               <a
@@ -69,8 +67,9 @@ export default function HeroSection({ setActiveSection }: HeroSectionProps) {
                 rel="noreferrer"
                 className="liquid-glass w-[40px] h-[40px] rounded-xl flex items-center justify-center text-cream hover:text-neon hover:bg-white/10 transition-all duration-300 border border-white/5"
                 title={social.label}
+                aria-label={social.label}
               >
-                <social.icon size={15} />
+                <social.icon size={15} aria-hidden="true" />
               </a>
             ))}
           </div>
@@ -88,11 +87,11 @@ export default function HeroSection({ setActiveSection }: HeroSectionProps) {
                   [{item.title}]
                 </span>
                 {idx === 0 ? (
-                  <Compass size={11} className="text-neon shrink-0" />
+                  <Compass size={11} className="text-neon shrink-0" aria-hidden="true" />
                 ) : idx === 1 ? (
-                  <Award size={11} className="text-[#b724ff] shrink-0" />
+                  <Award size={11} className="text-[#b724ff] shrink-0" aria-hidden="true" />
                 ) : (
-                  <BarChart3 size={11} className="text-blue-400 shrink-0" />
+                  <BarChart3 size={11} className="text-blue-400 shrink-0" aria-hidden="true" />
                 )}
               </div>
               <div>
@@ -158,12 +157,13 @@ export default function HeroSection({ setActiveSection }: HeroSectionProps) {
               target="_blank"
               rel="noreferrer"
               className="liquid-glass w-[40px] h-[40px] rounded-xl flex items-center justify-center text-cream hover:text-neon hover:bg-white/10 transition-all duration-300"
+              title={social.label}
+              aria-label={social.label}
             >
-              <social.icon size={15} />
+              <social.icon size={15} aria-hidden="true" />
             </a>
           ))}
         </div>
-
       </div>
     </section>
   );

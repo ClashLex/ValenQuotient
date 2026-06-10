@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import { Github, ChevronRight } from 'lucide-react';
 
-interface CTASectionProps {
-  setActiveSection: (sec: string) => void;
-}
-
-export default function CTASection({ setActiveSection }: CTASectionProps) {
+export default function CTASection() {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
   const socials = [
