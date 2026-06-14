@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import HeroSection from '../components/HeroSection';
 import CollectionSection from '../components/CollectionSection';
+import { DEFAULT_CATEGORIES } from '../constants/emissions';
 
 describe('Component Rendering Smoke Tests', () => {
   describe('HeroSection', () => {
@@ -20,19 +21,24 @@ describe('Component Rendering Smoke Tests', () => {
   describe('CollectionSection', () => {
     it('renders the calculators list and layout structures', () => {
       const mockSelectNFT = vi.fn();
-      const mockSetCommute = vi.fn();
-      const mockSetDiet = vi.fn();
-      const mockSetEnergy = vi.fn();
+      const mockUpdateTracker = vi.fn();
+      const mockAddCategory = vi.fn();
+      const mockDeleteCategory = vi.fn();
+
+      const mockTrackerValues = {
+        'eco-01': 15,
+        'eco-02': 'vegetarian',
+        'eco-03': 240
+      };
 
       render(
         <CollectionSection
+          categories={DEFAULT_CATEGORIES}
+          trackerValues={mockTrackerValues}
+          onUpdateTrackerValue={mockUpdateTracker}
+          onAddCategory={mockAddCategory}
+          onDeleteCategory={mockDeleteCategory}
           onSelectNFT={mockSelectNFT}
-          commuteMiles={15}
-          setCommuteMiles={mockSetCommute}
-          dietSelection="vegetarian"
-          setDietSelection={mockSetDiet}
-          energyKwh={240}
-          setEnergyKwh={mockSetEnergy}
         />
       );
 
@@ -46,3 +52,4 @@ describe('Component Rendering Smoke Tests', () => {
     });
   });
 });
+

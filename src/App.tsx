@@ -10,6 +10,7 @@ import { Sidebar } from './components/Sidebar';
 import AdvisoryModal from './components/AdvisoryModal';
 import LoadingSpinner from './components/LoadingSpinner';
 import { CarbonCategory } from './types';
+import { DEFAULT_CATEGORIES } from './constants/emissions';
 
 const AboutSection = lazy(() => import('./components/AboutSection'));
 const CollectionSection = lazy(() => import('./components/CollectionSection'));
@@ -20,10 +21,56 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<CarbonCategory | null>(null);
   const [textureUrl, setTextureUrl] = useState<string>('');
 
-  // Daily tracker state values to sync live across layouts
-  const [commuteMiles, setCommuteMiles] = useState<number>(15);
-  const [dietSelection, setDietSelection] = useState<'vegan' | 'vegetarian' | 'meat'>('vegetarian');
-  const [energyKwh, setEnergyKwh] = useState<number>(240);
+  // Loaded categories and tracker values from localStorage if available
+  const [categories, setCategories] = useState<CarbonCategory[]>(() => {
+    const saved = localStorage.getItem('vq_categories');
+    return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
+  });
+
+  const [trackerValues, setTrackerValues] = useState<Record<string, string | number>>(() => {
+    const saved = localStorage.getItem('vq_tracker_values');
+    return saved ? JSON.parse(saved) : {
+      'eco-01': 15,
+      'eco-02': 'vegetarian',
+      'eco-03': 240
+    };
+  });
+
+  useEffect(() => {
+    localStorage.setItem('vq_categories', JSON.stringify(categories));
+  }, [categories]);
+
+  useEffect(() => {
+    localStorage.setItem('vq_tracker_values', JSON.stringify(trackerValues));
+  }, [trackerValues]);
+
+  const addCustomCategory = (newCat: CarbonCategory) => {
+    setCategories((prev) => [...prev, newCat]);
+    setTrackerValues((prev) => ({
+      ...prev,
+      [newCat.id]: newCat.category === 'Diet' ? 'vegetarian' : 0,
+    }));
+  };
+
+  const deleteCustomCategory = (id: string) => {
+    setCategories((prev) => prev.filter((cat) => cat.id !== id));
+    setTrackerValues((prev) => {
+      const copy = { ...prev };
+      delete copy[id];
+      return copy;
+    });
+    if (selectedCategory?.id === id) {
+      setSelectedCategory(null);
+    }
+  };
+
+  const updateTrackerValue = (id: string, value: string | number) => {
+    setTrackerValues((prev) => ({
+      ...prev,
+      [id]: value,
+    }));
+  };
+
 
   // Generate ultra-premium background glass noise
   useEffect(() => {
@@ -123,13 +170,12 @@ export default function App() {
                 {activeSection === 'trackers' && (
                   <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 h-full flex flex-col min-h-0">
                     <CollectionSection 
+                      categories={categories}
+                      trackerValues={trackerValues}
+                      onUpdateTrackerValue={updateTrackerValue}
+                      onAddCategory={addCustomCategory}
+                      onDeleteCategory={deleteCustomCategory}
                       onSelectNFT={setSelectedCategory}
-                      commuteMiles={commuteMiles}
-                      setCommuteMiles={setCommuteMiles}
-                      dietSelection={dietSelection}
-                      setDietSelection={setDietSelection}
-                      energyKwh={energyKwh}
-                      setEnergyKwh={setEnergyKwh}
                     />
                   </div>
                 )}
@@ -180,9 +226,7 @@ export default function App() {
       <AdvisoryModal
         categoryItem={selectedCategory}
         onClose={() => setSelectedCategory(null)}
-        commuteMiles={commuteMiles}
-        dietSelection={dietSelection}
-        energyKwh={energyKwh}
+        selectedValue={selectedCategory ? trackerValues[selectedCategory.id] : null}
       />
     </div>
   );

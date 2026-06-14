@@ -5,62 +5,22 @@ import {
   Plus, 
   Heart, 
   MoreVertical,
+  Trash2,
 } from 'lucide-react';
 import { CarbonCategory } from '../types';
 import {
-  TRANSPORT_BASE_RATE,
   DIET_EMISSION_SCORES,
-  ENERGY_BASE_RATE,
 } from '../constants/emissions';
 
 interface CollectionSectionProps {
+  categories: CarbonCategory[];
+  trackerValues: Record<string, string | number>;
+  onUpdateTrackerValue: (id: string, val: string | number) => void;
+  onAddCategory: (cat: CarbonCategory) => void;
+  onDeleteCategory: (id: string) => void;
   onSelectNFT: (nft: CarbonCategory) => void;
-  commuteMiles: number;
-  setCommuteMiles: (val: number) => void;
-  dietSelection: 'vegan' | 'vegetarian' | 'meat';
-  setDietSelection: (val: 'vegan' | 'vegetarian' | 'meat') => void;
-  energyKwh: number;
-  setEnergyKwh: (val: number) => void;
 }
 
-const categories: CarbonCategory[] = [
-    {
-      id: "eco-01",
-      title: "DAILY COMMUTE FOOTPRINT",
-      impactScore: "8.7/10",
-      videoUrl: "/images/commute.webp", 
-      description: "Calculate your transportation emissions based on daily mileage, vehicle combustion class, and passenger travel patterns.",
-      category: 'Transport',
-      unit: "Miles / Day",
-      baseRate: TRANSPORT_BASE_RATE, 
-      specs: ["Vehicle: Gasoline Passenger Car", "Type: Ground Urban Commute", "Range: Short/Medium Distance"],
-      year: "2026"
-    },
-    {
-      id: "eco-02",
-      title: "FOOD & DIET FOOTPRINT",
-      impactScore: "9.0/10",
-      videoUrl: "/images/diet.webp", 
-      description: "Track the environmental impact of your daily dietary profile. Animal proteins have a heavy carbon footprint, while organic plant-based diets approach zero.",
-      category: 'Diet',
-      unit: "Meal Category",
-      baseRate: 1, 
-      specs: ["Sourcing: Urban & Conventional Agriculture", "Organic Content: Approx. 40%", "Supply Chain: Local/Regional Sourcing"],
-      year: "2026"
-    },
-    {
-      id: "eco-03",
-      title: "HOUSEHOLD UTILITIES FOOTPRINT",
-      impactScore: "8.2/10",
-      videoUrl: "/images/energy.webp", 
-      description: "Aggregate your home electricity use, heating metrics, and baseline vampire power leaks to track utility emissions.",
-      category: 'Energy',
-      unit: "kWh / Month",
-      baseRate: ENERGY_BASE_RATE, 
-      specs: ["Energy Grid: Mixed Fossil & Clean Fuel", "Renewable Power Ratio: Approx. 15%", "Standby Vampire Loads Included"],
-      year: "2026"
-    }
-  ];
 
   const challenges = [
     { id: 'ch-01', title: 'WALK THE MILE TODAY', points: 30, cat: 'Transport', impact: 'Reduce travel emissions by walking commutes < 1.5 miles' },
@@ -71,60 +31,49 @@ const categories: CarbonCategory[] = [
   ];
 
 export default function CollectionSection({
+  categories,
+  trackerValues,
+  onUpdateTrackerValue,
+  onAddCategory,
+  onDeleteCategory,
   onSelectNFT,
-  commuteMiles,
-  setCommuteMiles,
-  dietSelection,
-  setDietSelection,
-  energyKwh,
-  setEnergyKwh,
 }: CollectionSectionProps) {
   
   const [activeTabMode, setActiveTabMode] = useState<'chats' | 'status' | 'channels'>('chats');
-  const [selectedChatId, setSelectedChatId] = useState<string>('eco-01');
-  const [pledges, setPledges] = useState<string[]>([
-    "I PLEDGE TO WALK TO MY LOCAL MARKETPLACE INSTEAD OF DRIVING ON WEEKENDS.",
-    "SWAPPING ONE HAMBURGER PER WEEK WITH A ORGANIC LENTIL BOWL.",
-    "REDUCING MY HEATING TEMPERATURE BY 2 DEGREES THROUGHOUT WINTER."
-  ]);
+  const [selectedChatId, setSelectedChatId] = useState<string>(() => {
+    return categories[0]?.id || 'eco-01';
+  });
+  const [pledges, setPledges] = useState<string[]>(() => {
+    const saved = localStorage.getItem('vq_pledges');
+    return saved ? JSON.parse(saved) : [
+      "I PLEDGE TO WALK TO MY LOCAL MARKETPLACE INSTEAD OF DRIVING ON WEEKENDS.",
+      "SWAPPING ONE HAMBURGER PER WEEK WITH A ORGANIC LENTIL BOWL.",
+      "REDUCING MY HEATING TEMPERATURE BY 2 DEGREES THROUGHOUT WINTER."
+    ];
+  });
   const [newPledge, setNewPledge] = useState("");
   const [offsetTons, setOffsetTons] = useState(1);
-  const [completedChallenges, setCompletedChallenges] = useState<string[]>([]);
+  const [completedChallenges, setCompletedChallenges] = useState<string[]>(() => {
+    const saved = localStorage.getItem('vq_completed_challenges');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [mobShowThread, setMobShowThread] = useState<boolean>(false);
 
-  // Local state for dragging sliders smoothly
-  const [localCommute, setLocalCommute] = useState(commuteMiles);
-  const [localEnergy, setLocalEnergy] = useState(energyKwh);
+  // Custom Category Add Form states
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [newUnit, setNewUnit] = useState("");
+  const [newBaseRate, setNewBaseRate] = useState(0.1);
+  const [newCatType, setNewCatType] = useState<'Transport' | 'Diet' | 'Energy' | 'Other'>('Other');
 
-  // Sync local sliders when parent props change (e.g. initial render)
+  // Persistence hooks
   useEffect(() => {
-    setLocalCommute(commuteMiles);
-  }, [commuteMiles]);
+    localStorage.setItem('vq_pledges', JSON.stringify(pledges));
+  }, [pledges]);
 
   useEffect(() => {
-    setLocalEnergy(energyKwh);
-  }, [energyKwh]);
-
-  // Debounced parent setters to prevent UI lag during slider drags
-  const debouncedSetCommuteMiles = useMemo(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    return (val: number) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        setCommuteMiles(val);
-      }, 100);
-    };
-  }, [setCommuteMiles]);
-
-  const debouncedSetEnergyKwh = useMemo(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    return (val: number) => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        setEnergyKwh(val);
-      }, 100);
-    };
-  }, [setEnergyKwh]);
+    localStorage.setItem('vq_completed_challenges', JSON.stringify(completedChallenges));
+  }, [completedChallenges]);
 
   /**
    * Calculates carbon emissions in kg per day for a specific category.
@@ -132,10 +81,15 @@ export default function CollectionSection({
    * @returns {string} The formatted carbon emission value in kg.
    */
   const getOutputCo2 = (category: CarbonCategory): string => {
-    if (category.category === 'Transport') return (commuteMiles * category.baseRate).toFixed(1);
-    if (category.category === 'Diet') return DIET_EMISSION_SCORES[dietSelection].toFixed(1);
-    if (category.category === 'Energy') return ((energyKwh / 30) * category.baseRate).toFixed(1);
-    return "0.0";
+    const val = trackerValues[category.id];
+    if (category.category === 'Transport') return ((Number(val) || 0) * category.baseRate).toFixed(1);
+    if (category.category === 'Diet') {
+      const selection = (val || 'vegetarian') as 'vegan' | 'vegetarian' | 'meat';
+      return DIET_EMISSION_SCORES[selection].toFixed(1);
+    }
+    if (category.category === 'Energy') return (((Number(val) || 0) / 30) * category.baseRate).toFixed(1);
+    // Custom category calculations
+    return ((Number(val) || 0) * category.baseRate).toFixed(1);
   };
 
   /**
@@ -144,20 +98,27 @@ export default function CollectionSection({
    * @returns {string} Text combining the current value and unit.
    */
   const getUnitString = (category: CarbonCategory): string => {
-    if (category.category === 'Transport') return `${commuteMiles} ${category.unit}`;
-    if (category.category === 'Diet') return dietSelection.toUpperCase();
-    if (category.category === 'Energy') return `${energyKwh} ${category.unit}`;
-    return '';
+    const val = trackerValues[category.id];
+    if (category.category === 'Transport') return `${val ?? 0} ${category.unit}`;
+    if (category.category === 'Diet') return (val ?? 'vegetarian').toString().toUpperCase();
+    if (category.category === 'Energy') return `${val ?? 0} ${category.unit}`;
+    return `${val ?? 0} ${category.unit}`;
   };
 
   // Memoize total daily carbon baseline computation
   const baseTotalCo2 = useMemo(() => {
-    return (
-      commuteMiles * TRANSPORT_BASE_RATE +
-      DIET_EMISSION_SCORES[dietSelection] +
-      (energyKwh / 30) * ENERGY_BASE_RATE
-    );
-  }, [commuteMiles, dietSelection, energyKwh]);
+    return categories.reduce((sum, cat) => {
+      const val = trackerValues[cat.id];
+      if (cat.category === 'Transport') return sum + (Number(val) || 0) * cat.baseRate;
+      if (cat.category === 'Diet') {
+        const selection = (val || 'vegetarian') as 'vegan' | 'vegetarian' | 'meat';
+        return sum + DIET_EMISSION_SCORES[selection];
+      }
+      if (cat.category === 'Energy') return sum + ((Number(val) || 0) / 30) * cat.baseRate;
+      // Custom category computation
+      return sum + (Number(val) || 0) * cat.baseRate;
+    }, 0);
+  }, [categories, trackerValues]);
 
   // Memoize daily active reductions
   const activeReduction = useMemo(() => {
@@ -266,10 +227,10 @@ export default function CollectionSection({
                 {categories.map((cat) => {
                   const isActive = selectedChatId === cat.id;
                   return (
-                    <button
+                    <div
                       key={cat.id}
                       onClick={() => { setSelectedChatId(cat.id); setMobShowThread(true); }}
-                      className={`w-full text-left p-3 flex items-center gap-3 transition-colors ${
+                      className={`w-full text-left p-3 flex items-center gap-3 transition-colors cursor-pointer relative group/item ${
                         isActive ? 'bg-white/5 border-l-2 border-neon' : 'hover:bg-white/[0.02]'
                       }`}
                     >
@@ -283,26 +244,154 @@ export default function CollectionSection({
                         />
                         <span className="w-2 h-2 absolute bottom-0 right-0 rounded-full bg-neon border-2 border-[#010828]" />
                       </div>
-                      <div className="flex-grow overflow-hidden min-w-0">
+                      <div className="flex-grow overflow-hidden min-w-0 pr-6">
                         <div className="flex justify-between items-center mb-0.5">
                           <span className="font-grotesk text-[11px] uppercase tracking-wide text-cream truncate font-bold">
-                            {cat.category === 'Transport' ? '🚗 Commute' : cat.category === 'Diet' ? '🥦 Diet' : '⚡ Energy'}
+                            {cat.category === 'Transport' ? '🚗 Commute' : cat.category === 'Diet' ? '🥦 Diet' : cat.category === 'Energy' ? '⚡ Energy' : '🌿 Custom'}
                           </span>
                           <span className="font-mono text-[7px] text-[#9cb4e5]/40 shrink-0">LIVE</span>
                         </div>
                         <p className="font-mono text-[9px] text-[#9cb4e5]/60 truncate uppercase">
-                          {cat.category === 'Transport' && `${commuteMiles} mi/day`}
-                          {cat.category === 'Diet' && `Diet: ${dietSelection}`}
-                          {cat.category === 'Energy' && `${energyKwh} kWh/mo`}
+                          {cat.category === 'Transport' && `${trackerValues[cat.id] ?? 0} mi/day`}
+                          {cat.category === 'Diet' && `Diet: ${trackerValues[cat.id] ?? 'vegetarian'}`}
+                          {cat.category === 'Energy' && `${trackerValues[cat.id] ?? 0} kWh/mo`}
+                          {cat.category === 'Other' && `${trackerValues[cat.id] ?? 0} ${cat.unit.toLowerCase()}`}
                         </p>
                         <span className="font-mono text-[8px] text-neon/80 uppercase">✓ {getOutputCo2(cat)} kg CO₂/day</span>
                       </div>
-                    </button>
+                      
+                      {/* Delete icon for custom categories */}
+                      {cat.isCustom && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteCategory(cat.id);
+                            if (selectedChatId === cat.id) {
+                              const remaining = categories.filter((c) => c.id !== cat.id);
+                              setSelectedChatId(remaining[0]?.id || 'eco-01');
+                            }
+                          }}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded bg-black/40 border border-white/5 text-red-400 hover:text-red-300 hover:bg-white/10 transition-colors opacity-0 group-hover/item:opacity-100 cursor-pointer z-30"
+                          title="Delete Custom Tracker"
+                          aria-label="Delete Custom Tracker"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
               </div>
 
-              <div className="p-3 bg-white/[0.01] border-t border-white/5 shrink-0">
+              {/* Add Custom Tracker Inline Section */}
+              {!showAddForm ? (
+                <div className="p-3 border-t border-white/5 bg-white/[0.01] shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddForm(true)}
+                    className="w-full py-2 border border-dashed border-white/10 hover:border-neon hover:text-neon rounded-xl font-mono text-[9px] tracking-wider uppercase transition-colors flex items-center justify-center gap-1.5 cursor-pointer font-bold"
+                  >
+                    <Plus size={12} />
+                    <span>+ Add Custom Tracker</span>
+                  </button>
+                </div>
+              ) : (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!newTitle.trim() || !newUnit.trim()) return;
+                    const id = `custom-${Date.now()}`;
+                    onAddCategory({
+                      id,
+                      title: newTitle.toUpperCase(),
+                      impactScore: "7.5/10",
+                      videoUrl: "/images/energy.webp",
+                      description: `Track custom footprint impacts from ${newTitle.toLowerCase()} using real-time ${newUnit.toLowerCase()} inputs.`,
+                      category: newCatType,
+                      unit: newUnit,
+                      baseRate: newBaseRate,
+                      specs: [`Rate: ${newBaseRate} kg CO₂ / ${newUnit}`, `Type: User Dynamic Tracker`],
+                      year: "2026",
+                      isCustom: true
+                    });
+                    setNewTitle("");
+                    setNewUnit("");
+                    setNewBaseRate(0.1);
+                    setNewCatType('Other');
+                    setShowAddForm(false);
+                    setSelectedChatId(id);
+                  }}
+                  className="p-3 border-t border-white/5 bg-[#00041a] space-y-2.5 animate-in slide-in-from-bottom-2 duration-300 shrink-0 text-left"
+                >
+                  <div className="flex justify-between items-center border-b border-white/5 pb-1">
+                    <span className="font-mono text-[8px] text-neon uppercase font-bold">[ New Custom Tracker ]</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddForm(false)}
+                      className="text-cream/50 hover:text-cream font-mono text-[9px] uppercase cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <label className="font-mono text-[8px] text-cream/40 uppercase block">Tracker Title</label>
+                    <input
+                      type="text" required maxLength={30}
+                      value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
+                      placeholder="E.G. WASTE DISPOSAL"
+                      className="w-full bg-[#010828] border border-white/10 rounded-lg px-2.5 py-1.5 text-[9px] font-mono text-cream outline-none focus:border-neon uppercase"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="font-mono text-[8px] text-cream/40 uppercase block">Unit Label</label>
+                      <input
+                        type="text" required maxLength={15}
+                        value={newUnit} onChange={(e) => setNewUnit(e.target.value)}
+                        placeholder="E.G. LBS / WEEK"
+                        className="w-full bg-[#010828] border border-white/10 rounded-lg px-2.5 py-1.5 text-[9px] font-mono text-cream outline-none focus:border-neon uppercase"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-mono text-[8px] text-cream/40 uppercase block">CO₂ per Unit (kg)</label>
+                      <input
+                        type="number" required step="0.001" min="0.001" max="1000"
+                        value={newBaseRate} onChange={(e) => setNewBaseRate(Number(e.target.value))}
+                        className="w-full bg-[#010828] border border-white/10 rounded-lg px-2.5 py-1.5 text-[9px] font-mono text-cream outline-none focus:border-neon"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-mono text-[8px] text-cream/40 uppercase block">Category Group</label>
+                    <div className="grid grid-cols-4 gap-1 mt-1">
+                      {(['Transport', 'Diet', 'Energy', 'Other'] as const).map((t) => (
+                        <button
+                          key={t} type="button"
+                          onClick={() => setNewCatType(t)}
+                          className={`py-1.5 rounded-lg text-[7px] font-mono border transition-colors uppercase cursor-pointer ${
+                            newCatType === t ? 'bg-neon border-neon text-[#010828] font-bold' : 'bg-[#010828] border-white/10 text-cream/60 hover:bg-white/5'
+                          }`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-2 bg-neon hover:bg-neon/90 text-[#010828] text-[9px] font-grotesk tracking-widest uppercase rounded-xl transition-all font-bold cursor-pointer shadow-[0_0_8px_rgba(111,255,0,0.1)]"
+                  >
+                    Create Tracker
+                  </button>
+                </form>
+              )}
+
+              <div className="p-3 bg-white/[0.01] border-t border-white/5 shrink-0 text-left">
                 <span className="font-mono text-[8px] text-neon uppercase block mb-1">Quick Tip</span>
                 <p className="font-mono text-[9px] text-[#9cb4e5]/65 leading-relaxed uppercase">
                   Select a category above to update your carbon metrics.
@@ -330,7 +419,7 @@ export default function CollectionSection({
                   </div>
                   <div className="min-w-0">
                     <span className="font-grotesk text-[11px] font-bold uppercase tracking-wide block truncate">
-                      {currentCategory.category === 'Transport' ? '🚗 Commute' : currentCategory.category === 'Diet' ? '🥦 Food & Diet' : '⚡ Home Utilities'}
+                      {currentCategory.category === 'Transport' ? '🚗 Commute' : currentCategory.category === 'Diet' ? '🥦 Food & Diet' : currentCategory.category === 'Energy' ? '⚡ Home Utilities' : `🌿 ${currentCategory.title}`}
                     </span>
                     <span className="font-mono text-[8px] text-neon uppercase flex items-center gap-1 animate-pulse">
                       <span className="w-1 h-1 rounded-full bg-neon block shrink-0" />
@@ -353,51 +442,50 @@ export default function CollectionSection({
                 <div className="flex items-start gap-2 max-w-[90%]">
                   <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center border border-white/10 shrink-0 mt-1 font-mono text-[7px]">BOT</div>
                   <div className="bg-[#00041d]/90 border border-white/5 rounded-2xl rounded-tl-sm p-3">
-                    <p className="font-mono text-[10px] text-cream/90 uppercase leading-relaxed">
-                      {currentCategory.category === 'Transport' && "Hi! I'm your Commute Assistant. Adjust the slider below to set how many miles you travel daily."}
-                      {currentCategory.category === 'Diet' && "Hi! I'm your Diet Assistant. Select your eating style below to see its daily carbon impact."}
-                      {currentCategory.category === 'Energy' && "Hi! I'm your Energy Assistant. Adjust the slider below to set your monthly electricity usage."}
+                    <p className="font-mono text-[10px] text-cream/90 uppercase leading-relaxed text-left">
+                      {currentCategory.category === 'Transport' && !currentCategory.isCustom && "Hi! I'm your Commute Assistant. Adjust the slider below to set how many miles you travel daily."}
+                      {currentCategory.category === 'Diet' && !currentCategory.isCustom && "Hi! I'm your Diet Assistant. Select your eating style below to see its daily carbon impact."}
+                      {currentCategory.category === 'Energy' && !currentCategory.isCustom && "Hi! I'm your Energy Assistant. Adjust the slider below to set your monthly electricity usage."}
+                      {currentCategory.isCustom && `Hi! I'm your custom ${currentCategory.title.toLowerCase()} assistant. Adjust the slider below to set your daily ${currentCategory.unit.toLowerCase()} metrics.`}
                     </p>
                     <div className="font-mono text-[7px] text-cream/30 uppercase mt-1.5 text-right">Real-time</div>
                   </div>
                 </div>
 
                 {/* Calculator widget bubble */}
-                <div className="flex items-start justify-end max-w-[95%] ml-auto">
+                <div className="flex items-start justify-end max-w-[95%] ml-auto text-left">
                   <div className="bg-neon/10 border border-neon/30 rounded-2xl rounded-tr-sm p-3 w-full">
                     <div className="flex justify-between items-center mb-2 border-b border-neon/20 pb-1.5">
                       <span className="font-mono text-[9px] text-[#9cb4e5] uppercase font-bold">[ ⚡ Calculator ]</span>
                       <span className="font-mono text-[9px] text-neon font-bold">{getUnitString(currentCategory)}</span>
                     </div>
 
-                    {currentCategory.category === 'Transport' && (
+                    {currentCategory.category === 'Transport' && !currentCategory.isCustom && (
                       <div className="space-y-1.5">
                         <label htmlFor="commute-slider" className="sr-only">Commute Miles per Day</label>
                         <input
                           id="commute-slider"
-                          type="range" min="0" max="100" value={localCommute}
+                          type="range" min="0" max="100" value={trackerValues[currentCategory.id] ?? 0}
                           onChange={(e) => {
-                            const val = Number(e.target.value);
-                            setLocalCommute(val);
-                            debouncedSetCommuteMiles(val);
+                            onUpdateTrackerValue(currentCategory.id, Number(e.target.value));
                           }}
                           className="w-full accent-neon cursor-pointer h-1.5 bg-[#010828] border border-white/15 rounded-lg outline-none"
                         />
                         <div className="flex justify-between font-mono text-[8px] text-cream/40 uppercase">
-                          <span>0</span><span>{localCommute} MI</span><span>100</span>
+                          <span>0</span><span>{trackerValues[currentCategory.id] ?? 0} MI</span><span>100</span>
                         </div>
                       </div>
                     )}
 
-                    {currentCategory.category === 'Diet' && (
+                    {currentCategory.category === 'Diet' && !currentCategory.isCustom && (
                       <div className="grid grid-cols-3 gap-1.5">
                         {(['vegan', 'vegetarian', 'meat'] as const).map((mode) => (
                           <button
                             key={mode}
                             type="button"
-                            onClick={() => setDietSelection(mode)}
-                            className={`py-2 rounded-xl text-[9px] font-mono border transition-all uppercase ${
-                              dietSelection === mode
+                            onClick={() => onUpdateTrackerValue(currentCategory.id, mode)}
+                            className={`py-2 rounded-xl text-[9px] font-mono border transition-all uppercase cursor-pointer ${
+                              (trackerValues[currentCategory.id] ?? 'vegetarian') === mode
                                 ? 'bg-neon text-[#010828] border-neon font-bold'
                                 : 'bg-[#010828]/60 border-white/10 text-cream/60 hover:bg-white/10'
                             }`}
@@ -408,21 +496,36 @@ export default function CollectionSection({
                       </div>
                     )}
 
-                    {currentCategory.category === 'Energy' && (
+                    {currentCategory.category === 'Energy' && !currentCategory.isCustom && (
                       <div className="space-y-1.5">
                         <label htmlFor="energy-slider" className="sr-only">Household Energy Monthly (kWh)</label>
                         <input
                           id="energy-slider"
-                          type="range" min="10" max="600" step="10" value={localEnergy}
+                          type="range" min="10" max="600" step="10" value={trackerValues[currentCategory.id] ?? 0}
                           onChange={(e) => {
-                            const val = Number(e.target.value);
-                            setLocalEnergy(val);
-                            debouncedSetEnergyKwh(val);
+                            onUpdateTrackerValue(currentCategory.id, Number(e.target.value));
                           }}
                           className="w-full accent-neon cursor-pointer h-1.5 bg-[#010828] border border-white/15 rounded-lg outline-none"
                         />
                         <div className="flex justify-between font-mono text-[8px] text-cream/40 uppercase">
-                          <span>10</span><span>{localEnergy} KWH</span><span>600</span>
+                          <span>10</span><span>{trackerValues[currentCategory.id] ?? 0} KWH</span><span>600</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {(currentCategory.isCustom || currentCategory.category === 'Other') && (
+                      <div className="space-y-1.5">
+                        <label htmlFor="custom-slider" className="sr-only">{currentCategory.title}</label>
+                        <input
+                          id="custom-slider"
+                          type="range" min="0" max="100" value={trackerValues[currentCategory.id] ?? 0}
+                          onChange={(e) => {
+                            onUpdateTrackerValue(currentCategory.id, Number(e.target.value));
+                          }}
+                          className="w-full accent-neon cursor-pointer h-1.5 bg-[#010828] border border-white/15 rounded-lg outline-none"
+                        />
+                        <div className="flex justify-between font-mono text-[8px] text-cream/40 uppercase">
+                          <span>0</span><span>{trackerValues[currentCategory.id] ?? 0} {currentCategory.unit.toUpperCase()}</span><span>100</span>
                         </div>
                       </div>
                     )}

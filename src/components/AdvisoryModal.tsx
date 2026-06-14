@@ -10,9 +10,7 @@ import {
 interface AdvisoryModalProps {
   categoryItem: CarbonCategory | null;
   onClose: () => void;
-  commuteMiles: number;
-  dietSelection: 'vegan' | 'vegetarian' | 'meat';
-  energyKwh: number;
+  selectedValue: string | number | null;
 }
 
 type DiagnosticStep = 'idle' | 'analyzing' | 'calculating' | 'personalizing' | 'success';
@@ -29,9 +27,7 @@ interface DynamicTip {
 export default function AdvisoryModal({
   categoryItem,
   onClose,
-  commuteMiles,
-  dietSelection,
-  energyKwh,
+  selectedValue,
 }: AdvisoryModalProps) {
   const [step, setStep] = useState<DiagnosticStep>('idle');
   const [progress, setProgress] = useState(0);
@@ -106,15 +102,20 @@ export default function AdvisoryModal({
    */
   const calculateResult = (): string => {
     if (categoryItem.category === 'Transport') {
+      const commuteMiles = Number(selectedValue) || 0;
       return (commuteMiles * TRANSPORT_BASE_RATE).toFixed(1);
     }
     if (categoryItem.category === 'Diet') {
-      return DIET_EMISSION_SCORES[dietSelection].toFixed(1);
+      const selection = (selectedValue || 'vegetarian') as 'vegan' | 'vegetarian' | 'meat';
+      return DIET_EMISSION_SCORES[selection].toFixed(1);
     }
     if (categoryItem.category === 'Energy') {
+      const energyKwh = Number(selectedValue) || 0;
       return ((energyKwh / 30) * ENERGY_BASE_RATE).toFixed(1);
     }
-    return '0.0';
+    // Custom category calculations
+    const val = Number(selectedValue) || 0;
+    return (val * categoryItem.baseRate).toFixed(1);
   };
 
   /**
@@ -123,6 +124,7 @@ export default function AdvisoryModal({
    */
   const getDynamicTips = (): DynamicTip[] => {
     if (categoryItem.category === 'Transport') {
+      const commuteMiles = Number(selectedValue) || 0;
       if (commuteMiles > 40) {
         return [
           {
@@ -172,6 +174,7 @@ export default function AdvisoryModal({
     }
 
     if (categoryItem.category === 'Diet') {
+      const dietSelection = (selectedValue || 'vegetarian') as 'vegan' | 'vegetarian' | 'meat';
       if (dietSelection === 'meat') {
         return [
           {
@@ -220,37 +223,59 @@ export default function AdvisoryModal({
       }
     }
 
-    if (energyKwh > 300) {
-      return [
-        {
-          title: 'SMART THERMOSTAT TUNING',
-          tip: 'Lowering household climate systems by just 2°F during winter cuts heat consumption ratios by up to 10% annually.',
-        },
-        {
-          title: 'LED APPLIANCE OVERHAUL',
-          tip: 'Swap to high-efficiency LEDs to save up to 75% on daily room illumination draw vs incandescent bulbs.',
-        },
-        {
-          title: 'STANDBY DRAIN INTERCEPT',
-          tip: 'Vampire energy draw from plugged entertainment hubs accounts for 10% of electric bills. Use smart switches to kill idle load.',
-        },
-      ];
-    } else {
-      return [
-        {
-          title: 'ENERGY CONSERVATION METER',
-          tip: 'Your electricity budget is incredibly tight. Continue using energy efficient cooling configurations to keep indices lean.',
-        },
-        {
-          title: 'RENEWABLE SUBSCRIPTION',
-          tip: 'Subscribe to residential community solar programs, matching your electrical load directly with regional solar generation grids.',
-        },
-        {
-          title: 'COLD TEMPERATURE WASHES',
-          tip: 'Perform laundry wash cycles at 30°C/Cold. Heating water draws up to 90% of a washing machine\'s absolute power capacity.',
-        },
-      ];
+    if (categoryItem.category === 'Energy') {
+      const energyKwh = Number(selectedValue) || 0;
+      if (energyKwh > 300) {
+        return [
+          {
+            title: 'SMART THERMOSTAT TUNING',
+            tip: 'Lowering household climate systems by just 2°F during winter cuts heat consumption ratios by up to 10% annually.',
+          },
+          {
+            title: 'LED APPLIANCE OVERHAUL',
+            tip: 'Swap to high-efficiency LEDs to save up to 75% on daily room illumination draw vs incandescent bulbs.',
+          },
+          {
+            title: 'STANDBY DRAIN INTERCEPT',
+            tip: 'Vampire energy draw from plugged entertainment hubs accounts for 10% of electric bills. Use smart switches to kill idle load.',
+          },
+        ];
+      } else {
+        return [
+          {
+            title: 'ENERGY CONSERVATION METER',
+            tip: 'Your electricity budget is incredibly tight. Continue using energy efficient cooling configurations to keep indices lean.',
+          },
+          {
+            title: 'RENEWABLE SUBSCRIPTION',
+            tip: 'Subscribe to residential community solar programs, matching your electrical load directly with regional solar generation grids.',
+          },
+          {
+            title: 'COLD TEMPERATURE WASHES',
+            tip: 'Perform laundry wash cycles at 30°C/Cold. Heating water draws up to 90% of a washing machine\'s absolute power capacity.',
+          },
+        ];
+      }
     }
+
+    // Default custom category tips
+    const baseVal = Number(selectedValue) || 0;
+    const reducedVal = (baseVal * 0.8).toFixed(1);
+    const co2SavedAnnually = (baseVal * categoryItem.baseRate * 0.2 * 365).toFixed(0);
+    return [
+      {
+        title: 'EFFICIENCY TARGET',
+        tip: `Aim to reduce your daily ${categoryItem.title.toLowerCase()} from ${baseVal} to ${reducedVal} ${categoryItem.unit.toLowerCase()} (a 20% drop) to eliminate up to ${co2SavedAnnually} kg CO₂ annually.`,
+      },
+      {
+        title: 'BASELINE AUDIT',
+        tip: `Analyze the lifecycle inputs of your custom ${categoryItem.title.toLowerCase()} footprint to identify alternative low-emission routes.`,
+      },
+      {
+        title: 'HABIT REDUCTIONS',
+        tip: `Ensure corresponding active challenges are completed weekly to compensate for remaining ${categoryItem.title.toLowerCase()} loads.`,
+      },
+    ];
   };
 
   /**
@@ -462,7 +487,9 @@ export default function AdvisoryModal({
                       ? '1.8 Tons'
                       : categoryItem.category === 'Diet'
                         ? '2.4 Tons'
-                        : '1.2 Tons'}{' '}
+                        : categoryItem.category === 'Energy'
+                          ? '1.2 Tons'
+                          : '0.8 Tons'}{' '}
                     of CO₂ / year
                   </span>
                   .
