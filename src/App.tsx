@@ -198,7 +198,7 @@ export default function App() {
         {/* =========================================================================
             3. MOBILE STICKY BOTTOM TAB NAVIGATION BAR
             ========================================================================= */}
-        <nav className="md:hidden border-t border-white/5 bg-[#00051e]/95 backdrop-blur-md flex justify-around items-stretch shrink-0 z-30 pb-safe" style={{ minHeight: '56px' }}>
+        <nav aria-label="Mobile Navigation" className="md:hidden border-t border-white/5 bg-[#00051e]/95 backdrop-blur-md flex justify-around items-stretch shrink-0 z-30 pb-safe" style={{ minHeight: '56px' }}>
           {tabs.map((tab) => {
             const isActive = activeSection === tab.id;
             return (

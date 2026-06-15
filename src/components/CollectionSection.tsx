@@ -336,8 +336,9 @@ export default function CollectionSection({
                   </div>
                   
                   <div className="space-y-1">
-                    <label className="font-mono text-[8px] text-cream/40 uppercase block">Tracker Title</label>
+                    <label htmlFor="custom-tracker-title" className="font-mono text-[8px] text-cream/40 uppercase block">Tracker Title</label>
                     <input
+                      id="custom-tracker-title"
                       type="text" required maxLength={30}
                       value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
                       placeholder="E.G. WASTE DISPOSAL"
@@ -347,8 +348,9 @@ export default function CollectionSection({
 
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="font-mono text-[8px] text-cream/40 uppercase block">Unit Label</label>
+                      <label htmlFor="custom-tracker-unit" className="font-mono text-[8px] text-cream/40 uppercase block">Unit Label</label>
                       <input
+                        id="custom-tracker-unit"
                         type="text" required maxLength={15}
                         value={newUnit} onChange={(e) => setNewUnit(e.target.value)}
                         placeholder="E.G. LBS / WEEK"
@@ -356,8 +358,9 @@ export default function CollectionSection({
                       />
                     </div>
                     <div>
-                      <label className="font-mono text-[8px] text-cream/40 uppercase block">CO₂ per Unit (kg)</label>
+                      <label htmlFor="custom-tracker-rate" className="font-mono text-[8px] text-cream/40 uppercase block">CO₂ per Unit (kg)</label>
                       <input
+                        id="custom-tracker-rate"
                         type="number" required step="0.001" min="0.001" max="1000"
                         value={newBaseRate} onChange={(e) => setNewBaseRate(Number(e.target.value))}
                         className="w-full bg-[#010828] border border-white/10 rounded-lg px-2.5 py-1.5 text-[9px] font-mono text-cream outline-none focus:border-neon"
@@ -366,12 +369,13 @@ export default function CollectionSection({
                   </div>
 
                   <div>
-                    <label className="font-mono text-[8px] text-cream/40 uppercase block">Category Group</label>
-                    <div className="grid grid-cols-4 gap-1 mt-1">
+                    <span className="font-mono text-[8px] text-cream/40 uppercase block" id="category-group-label">Category Group</span>
+                    <div className="grid grid-cols-4 gap-1 mt-1" role="group" aria-labelledby="category-group-label">
                       {(['Transport', 'Diet', 'Energy', 'Other'] as const).map((t) => (
                         <button
                           key={t} type="button"
                           onClick={() => setNewCatType(t)}
+                          aria-pressed={newCatType === t}
                           className={`py-1.5 rounded-lg text-[7px] font-mono border transition-colors uppercase cursor-pointer ${
                             newCatType === t ? 'bg-neon border-neon text-[#010828] font-bold' : 'bg-[#010828] border-white/10 text-cream/60 hover:bg-white/5'
                           }`}
@@ -478,21 +482,25 @@ export default function CollectionSection({
                     )}
 
                     {currentCategory.category === 'Diet' && !currentCategory.isCustom && (
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {(['vegan', 'vegetarian', 'meat'] as const).map((mode) => (
-                          <button
-                            key={mode}
-                            type="button"
-                            onClick={() => onUpdateTrackerValue(currentCategory.id, mode)}
-                            className={`py-2 rounded-xl text-[9px] font-mono border transition-all uppercase cursor-pointer ${
-                              (trackerValues[currentCategory.id] ?? 'vegetarian') === mode
-                                ? 'bg-neon text-[#010828] border-neon font-bold'
-                                : 'bg-[#010828]/60 border-white/10 text-cream/60 hover:bg-white/10'
-                            }`}
-                          >
-                            {mode}
-                          </button>
-                        ))}
+                      <div className="grid grid-cols-3 gap-1.5" role="group" aria-label="Diet selection">
+                        {(['vegan', 'vegetarian', 'meat'] as const).map((mode) => {
+                          const isActive = (trackerValues[currentCategory.id] ?? 'vegetarian') === mode;
+                          return (
+                            <button
+                              key={mode}
+                              type="button"
+                              onClick={() => onUpdateTrackerValue(currentCategory.id, mode)}
+                              aria-pressed={isActive}
+                              className={`py-2 rounded-xl text-[9px] font-mono border transition-all uppercase cursor-pointer ${
+                                isActive
+                                  ? 'bg-neon text-[#010828] border-neon font-bold'
+                                  : 'bg-[#010828]/60 border-white/10 text-cream/60 hover:bg-white/10'
+                              }`}
+                            >
+                              {mode}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
 

@@ -93,6 +93,18 @@ export default function AdvisoryModal({
     };
   }, [categoryItem, runTrigger]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    if (categoryItem) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [categoryItem, onClose]);
+
   if (!categoryItem) return null;
 
   /**

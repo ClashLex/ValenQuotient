@@ -31,7 +31,7 @@ export const Sidebar = React.memo(function Sidebar({
   return (
     <aside className="hidden md:flex flex-col w-[72px] lg:w-[84px] h-full bg-[#00041d] border-r border-white/5 py-5 justify-between items-center shrink-0 z-30 relative shadow-2xl">
       {/* Top App Avatar / Logo Badge */}
-      <div className="flex flex-col items-center gap-1.5 focus:outline-none">
+      <div className="flex flex-col items-center gap-1.5 focus:outline-none" aria-hidden="true">
         <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-neon to-emerald-500 p-0.5 flex items-center justify-center shadow-lg shadow-neon/10 hover:scale-105 transition-transform duration-300">
           <div className="w-full h-full rounded-xl bg-[#010828] flex items-center justify-center font-bold font-grotesk text-neon text-sm">
             VQ
