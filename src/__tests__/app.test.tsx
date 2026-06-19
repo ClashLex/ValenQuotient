@@ -9,6 +9,41 @@ import AdvisoryModal from '../components/AdvisoryModal';
 import CollectionSection from '../components/CollectionSection';
 import { DEFAULT_CATEGORIES } from '../constants/emissions';
 
+// Mock Firebase modules so tests don't fail without credentials
+vi.mock('../firebase', () => ({
+  auth: {},
+  db: {},
+  googleProvider: {},
+}));
+
+vi.mock('firebase/auth', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('firebase/auth')>();
+  return {
+    ...actual,
+    getAuth: vi.fn(() => ({})),
+    onAuthStateChanged: vi.fn((_auth, cb) => { cb(null); return vi.fn(); }),
+    signInWithEmailAndPassword: vi.fn(),
+    createUserWithEmailAndPassword: vi.fn(),
+    signInWithPopup: vi.fn(),
+    signOut: vi.fn(),
+    updateProfile: vi.fn(),
+    GoogleAuthProvider: vi.fn(() => ({ setCustomParameters: vi.fn() })),
+  };
+});
+
+vi.mock('firebase/firestore', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('firebase/firestore')>();
+  return {
+    ...actual,
+    getFirestore: vi.fn(() => ({})),
+    doc: vi.fn(() => ({})),
+    getDoc: vi.fn(() => Promise.resolve({ exists: () => false, data: () => ({}) })),
+    setDoc: vi.fn(() => Promise.resolve()),
+    updateDoc: vi.fn(() => Promise.resolve()),
+    serverTimestamp: vi.fn(() => new Date()),
+  };
+});
+
 describe('App & Remaining Components Coverage', () => {
   it('renders App correctly and shows Hero by default', async () => {
     // Need to mock matchMedia if used, but it seems not.
@@ -92,7 +127,8 @@ describe('App & Remaining Components Coverage', () => {
   describe('Sidebar', () => {
     it('renders correctly and allows changing active section', () => {
       const setActiveSection = vi.fn();
-      render(<Sidebar activeSection="home" setActiveSection={setActiveSection} />);
+      const onOpenAuth = vi.fn();
+      render(<Sidebar activeSection="home" setActiveSection={setActiveSection} onOpenAuth={onOpenAuth} />);
       const btn = screen.getByLabelText('Gap Matrix');
       fireEvent.click(btn);
       expect(setActiveSection).toHaveBeenCalledWith('analysis');

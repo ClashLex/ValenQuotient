@@ -13,6 +13,10 @@ import {
   Edit3,
   Save,
   X,
+  LogIn,
+  Shield,
+  Cloud,
+  BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -23,6 +27,7 @@ import { CarbonCategory } from '../types';
 interface UserDashboardProps {
   categories: CarbonCategory[];
   trackerValues: Record<string, string | number>;
+  onOpenAuth: () => void;
 }
 
 /** Derive initials from a display name or email */
@@ -58,8 +63,79 @@ const BADGES = [
   { id: 'streak', icon: '🔥', label: 'Streak Master', desc: 'Active 7 days in a row', unlocked: false },
 ];
 
-export default function UserDashboard({ categories, trackerValues }: UserDashboardProps) {
+/** Guest (not signed in) view */
+function GuestView({ onOpenAuth }: { onOpenAuth: () => void }) {
+  return (
+    <section className="relative w-full rounded-2xl flex flex-col bg-[#010828]/40 border border-white/5 p-4 sm:p-6 gap-5">
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-neon animate-pulse shadow-[0_0_6px_#6FFF00]" />
+        <span className="font-mono text-[9px] sm:text-[10px] text-neon uppercase tracking-widest">Personal Dashboard</span>
+      </div>
+
+      {/* CTA Card */}
+      <div className="liquid-glass rounded-2xl border border-white/8 p-6 sm:p-8 flex flex-col items-center gap-5 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-neon/20 to-emerald-500/10 border border-neon/20 flex items-center justify-center">
+          <User size={28} className="text-neon/70" />
+        </div>
+        <div>
+          <h2 className="font-grotesk text-xl text-cream uppercase tracking-wider mb-2">Sign In to Unlock</h2>
+          <p className="font-mono text-[11px] text-cream/50 leading-relaxed max-w-sm">
+            Create a free account to save your carbon data across devices, track your progress over time, and unlock achievements.
+          </p>
+        </div>
+
+        <button
+          id="guest-signin-btn"
+          onClick={onOpenAuth}
+          className="flex items-center gap-2 px-8 py-3 rounded-full bg-neon text-[#010828] font-grotesk text-[11px] uppercase tracking-widest hover:bg-white transition-all duration-300 shadow-lg shadow-neon/20 cursor-pointer group"
+        >
+          <LogIn size={14} />
+          <span>Sign In / Create Account</span>
+        </button>
+
+        <p className="font-mono text-[9px] text-cream/25">Free forever · No credit card required</p>
+      </div>
+
+      {/* Benefits */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[
+          { icon: Cloud, title: 'Cloud Sync', desc: 'Access your data on any device', color: 'text-blue-400' },
+          { icon: BarChart3, title: 'Progress Tracking', desc: 'Monitor your CO₂ reduction over time', color: 'text-neon' },
+          { icon: Shield, title: 'Secure & Private', desc: 'Encrypted with Firebase security', color: 'text-[#b724ff]' },
+        ].map(({ icon: Icon, title, desc, color }) => (
+          <div key={title} className="liquid-glass border border-white/5 rounded-xl p-4 flex flex-col items-center gap-2 text-center hover:border-white/12 transition-all duration-300">
+            <Icon size={20} className={color} />
+            <span className="font-grotesk text-[11px] text-cream uppercase tracking-wide">{title}</span>
+            <span className="font-mono text-[9px] text-cream/40 leading-relaxed">{desc}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Preview Achievements (locked) */}
+      <div className="liquid-glass border border-white/5 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <span className="font-mono text-[9px] text-neon uppercase tracking-widest">Achievements Preview</span>
+          <span className="font-mono text-[8px] text-cream/30">Sign in to earn</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {BADGES.map(badge => (
+            <div key={badge.id} className="rounded-xl border border-white/5 bg-white/[0.01] p-3 flex flex-col items-center gap-1.5 text-center opacity-40 grayscale">
+              <span className="text-2xl">{badge.icon}</span>
+              <span className="font-grotesk text-[9px] text-cream uppercase tracking-wider leading-tight">{badge.label}</span>
+              <span className="font-mono text-[7px] text-cream/40 leading-tight">{badge.desc}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
+export default function UserDashboard({ categories, trackerValues, onOpenAuth }: UserDashboardProps) {
   const { user, signOut } = useAuth();
+  if (!user) return <GuestView onOpenAuth={onOpenAuth} />;
   const [joinDate, setJoinDate] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState(user?.displayName ?? '');

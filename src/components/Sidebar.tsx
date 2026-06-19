@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 interface SidebarProps {
   activeSection: string;
   setActiveSection: (sec: string) => void;
+  onOpenAuth: () => void;
 }
 
 interface TabItem {
@@ -21,6 +22,7 @@ interface TabItem {
 export const Sidebar = React.memo(function Sidebar({
   activeSection,
   setActiveSection,
+  onOpenAuth,
 }: SidebarProps) {
   const { user } = useAuth();
 
@@ -94,12 +96,12 @@ export const Sidebar = React.memo(function Sidebar({
 
       {/* Bottom Panel — User Avatar + Status */}
       <div className="flex flex-col items-center gap-4">
-        {/* User avatar button → profile tab */}
+        {/* User avatar button → profile tab (signed in) or auth modal (guest) */}
         <button
           id="sidebar-user-avatar"
-          onClick={() => setActiveSection('profile')}
-          title="My Profile"
-          aria-label="Open my profile"
+          onClick={() => user ? setActiveSection('profile') : onOpenAuth()}
+          title={user ? 'My Profile' : 'Sign In'}
+          aria-label={user ? 'Open my profile' : 'Sign in'}
           className={`relative w-9 h-9 rounded-xl flex items-center justify-center font-grotesk text-xs font-bold transition-all duration-300 cursor-pointer ${
             activeSection === 'profile'
               ? 'bg-neon/20 border border-neon/40 text-neon shadow-[0_0_10px_rgba(111,255,0,0.2)]'
