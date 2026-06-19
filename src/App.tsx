@@ -1,27 +1,38 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { 
-  Home, 
-  BarChart3, 
-  MessageSquare, 
-  HelpCircle
+import {
+  Home,
+  BarChart3,
+  MessageSquare,
+  HelpCircle,
+  UserCircle2,
+  LogOut,
 } from 'lucide-react';
 import HeroSection from './components/HeroSection';
 import { Sidebar } from './components/Sidebar';
 import AdvisoryModal from './components/AdvisoryModal';
 import LoadingSpinner from './components/LoadingSpinner';
+import AuthPage from './components/AuthPage';
+import UserDashboard from './components/UserDashboard';
 import { CarbonCategory } from './types';
 import { DEFAULT_CATEGORIES } from './constants/emissions';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { db } from './firebase';
 
 const AboutSection = lazy(() => import('./components/AboutSection'));
 const CollectionSection = lazy(() => import('./components/CollectionSection'));
 const CTASection = lazy(() => import('./components/CTASection'));
 
-export default function App() {
+// ─── Inner app (rendered only when authenticated) ────────────────────────────
+function AppInner() {
+  const { user, signOut, loading } = useAuth();
+
   const [activeSection, setActiveSection] = useState<string>('home');
   const [selectedCategory, setSelectedCategory] = useState<CarbonCategory | null>(null);
   const [textureUrl, setTextureUrl] = useState<string>('');
+  const [dataReady, setDataReady] = useState(false);
 
-  // Loaded categories and tracker values from localStorage if available
+  // Categories & tracker values — start from localStorage, then overlay Firestore
   const [categories, setCategories] = useState<CarbonCategory[]>(() => {
     const saved = localStorage.getItem('vq_categories');
     return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
@@ -29,20 +40,55 @@ export default function App() {
 
   const [trackerValues, setTrackerValues] = useState<Record<string, string | number>>(() => {
     const saved = localStorage.getItem('vq_tracker_values');
-    return saved ? JSON.parse(saved) : {
-      'eco-01': 15,
-      'eco-02': 'vegetarian',
-      'eco-03': 240
-    };
+    return saved
+      ? JSON.parse(saved)
+      : { 'eco-01': 15, 'eco-02': 'vegetarian', 'eco-03': 240 };
   });
 
+  // ── Firestore hydration on login ──────────────────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, 'userData', user.uid));
+        if (!cancelled && snap.exists()) {
+          const data = snap.data();
+          if (data.categories) setCategories(data.categories);
+          if (data.trackerValues) setTrackerValues(data.trackerValues);
+        }
+      } catch (_) {
+        // Fall back to localStorage silently
+      } finally {
+        if (!cancelled) setDataReady(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.uid]);
+
+  // ── Sync categories to localStorage + Firestore ───────────────────────────
   useEffect(() => {
     localStorage.setItem('vq_categories', JSON.stringify(categories));
-  }, [categories]);
+    if (user && dataReady) {
+      setDoc(
+        doc(db, 'userData', user.uid),
+        { categories },
+        { merge: true }
+      ).catch(() => {});
+    }
+  }, [categories, user, dataReady]);
 
+  // ── Sync trackerValues to localStorage + Firestore ────────────────────────
   useEffect(() => {
     localStorage.setItem('vq_tracker_values', JSON.stringify(trackerValues));
-  }, [trackerValues]);
+    if (user && dataReady) {
+      setDoc(
+        doc(db, 'userData', user.uid),
+        { trackerValues },
+        { merge: true }
+      ).catch(() => {});
+    }
+  }, [trackerValues, user, dataReady]);
 
   const addCustomCategory = (newCat: CarbonCategory) => {
     setCategories((prev) => [...prev, newCat]);
@@ -71,7 +117,6 @@ export default function App() {
     }));
   };
 
-
   // Generate ultra-premium background glass noise
   useEffect(() => {
     const canvas = document.createElement('canvas');
@@ -97,15 +142,41 @@ export default function App() {
     { id: 'home', label: 'Dashboard', icon: Home, num: '01' },
     { id: 'analysis', label: 'Gap Matrix', icon: BarChart3, num: '02' },
     { id: 'trackers', label: 'CO₂ Trackers', icon: MessageSquare, num: '03' },
-    { id: 'advisory', label: 'Eco Directive', icon: HelpCircle, num: '04' }
+    { id: 'advisory', label: 'Eco Directive', icon: HelpCircle, num: '04' },
+    { id: 'profile', label: 'Profile', icon: UserCircle2, num: '05' },
   ];
+
+  // Show full-screen spinner while auth state resolves
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-[#010828] flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  // Gate behind auth
+  if (!user) return <AuthPage />;
+
+  // User initials for header
+  const initials = (() => {
+    const name = user.displayName;
+    const email = user.email ?? '';
+    if (name) {
+      const parts = name.trim().split(' ');
+      return parts.length >= 2
+        ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+        : name.slice(0, 2).toUpperCase();
+    }
+    return email.slice(0, 2).toUpperCase();
+  })();
 
   return (
     <div className="relative h-dvh max-h-dvh w-full bg-[#010828] text-cream font-sans selection:bg-neon selection:text-[#010828] flex flex-col md:flex-row overflow-hidden select-none">
-      
+
       {/* Background static nebula effects */}
       <div className="absolute inset-0 bg-nebula pointer-events-none z-0 opacity-70" />
-      
+
       {/* Grain Texture Overlay */}
       <div
         id="texture-grain"
@@ -128,10 +199,10 @@ export default function App() {
           2. MAIN CONTENT WINDOW AREA
           ========================================================================= */}
       <div className="flex-grow flex flex-col h-full overflow-hidden relative min-w-0">
-        
+
         {/* Top Status Header Bar */}
         <header className="h-12 sm:h-14 border-b border-white/5 backdrop-blur-md bg-[#00041d]/85 flex items-center justify-between px-3 sm:px-5 shrink-0 z-20">
-          
+
           {/* Logo Brand info */}
           <div className="flex items-center gap-2">
             <h1 className="font-grotesk text-sm sm:text-base tracking-widest uppercase text-cream font-bold leading-none">
@@ -142,12 +213,42 @@ export default function App() {
             </span>
           </div>
 
-          {/* Right sync status indicator */}
-          <span className="inline-flex items-center gap-1.5 font-mono text-[8px] text-cream/40 uppercase tracking-widest whitespace-nowrap">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            <span className="hidden sm:inline">Real-time Updates</span>
-            <span className="sm:hidden">LIVE</span>
-          </span>
+          {/* Right: User info + sign out */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="hidden sm:inline-flex items-center gap-1.5 font-mono text-[8px] text-cream/40 uppercase tracking-widest">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              Real-time
+            </span>
+
+            {/* User avatar */}
+            <button
+              id="header-user-avatar"
+              onClick={() => setActiveSection('profile')}
+              title={user.displayName || user.email || 'Profile'}
+              className="flex items-center gap-2 px-2 py-1 rounded-lg border border-white/8 bg-white/[0.02] hover:bg-white/[0.05] hover:border-neon/20 transition-all duration-200 cursor-pointer"
+            >
+              {user.photoURL ? (
+                <img src={user.photoURL} alt="user" className="w-5 h-5 rounded-full object-cover" />
+              ) : (
+                <div className="w-5 h-5 rounded-full bg-neon/20 border border-neon/30 flex items-center justify-center font-grotesk text-[8px] text-neon font-bold">
+                  {initials}
+                </div>
+              )}
+              <span className="hidden sm:block font-mono text-[9px] text-cream/60 max-w-[100px] truncate">
+                {user.displayName || user.email?.split('@')[0]}
+              </span>
+            </button>
+
+            {/* Quick sign-out (mobile) */}
+            <button
+              id="header-signout-btn"
+              onClick={signOut}
+              title="Sign out"
+              className="sm:hidden flex items-center justify-center w-7 h-7 rounded-lg border border-white/8 text-cream/40 hover:text-red-400 hover:border-red-400/30 hover:bg-red-500/5 transition-all duration-200 cursor-pointer"
+            >
+              <LogOut size={13} />
+            </button>
+          </div>
         </header>
 
         {/* Global Active Screen Workspace */}
@@ -169,7 +270,7 @@ export default function App() {
                 )}
                 {activeSection === 'trackers' && (
                   <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 h-full flex flex-col min-h-0">
-                    <CollectionSection 
+                    <CollectionSection
                       categories={categories}
                       trackerValues={trackerValues}
                       onUpdateTrackerValue={updateTrackerValue}
@@ -182,6 +283,11 @@ export default function App() {
                 {activeSection === 'advisory' && (
                   <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
                     <CTASection />
+                  </div>
+                )}
+                {activeSection === 'profile' && (
+                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <UserDashboard categories={categories} trackerValues={trackerValues} />
                   </div>
                 )}
               </Suspense>
@@ -229,5 +335,14 @@ export default function App() {
         selectedValue={selectedCategory ? trackerValues[selectedCategory.id] : null}
       />
     </div>
+  );
+}
+
+// ─── Root app wrapped in AuthProvider ────────────────────────────────────────
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppInner />
+    </AuthProvider>
   );
 }

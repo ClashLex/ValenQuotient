@@ -14,4 +14,7 @@ export interface CarbonCategory {
 
 export type NavItem = 'Homepage' | 'About' | 'Trackers' | 'Advisory' | 'Contact';
 
+// Re-export Firebase User for convenience
+export type { User } from 'firebase/auth';
+
 

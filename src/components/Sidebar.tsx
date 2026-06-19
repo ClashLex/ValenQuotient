@@ -1,5 +1,6 @@
 import React from 'react';
-import { Home, BarChart3, MessageSquare, HelpCircle, Radio, LucideIcon } from 'lucide-react';
+import { Home, BarChart3, MessageSquare, HelpCircle, Radio, UserCircle2, LucideIcon } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   activeSection: string;
@@ -21,12 +22,28 @@ export const Sidebar = React.memo(function Sidebar({
   activeSection,
   setActiveSection,
 }: SidebarProps) {
+  const { user } = useAuth();
+
   const tabs: TabItem[] = [
     { id: 'home', label: 'Dashboard', icon: Home, num: '01' },
     { id: 'analysis', label: 'Gap Matrix', icon: BarChart3, num: '02' },
     { id: 'trackers', label: 'CO₂ Trackers', icon: MessageSquare, num: '03' },
     { id: 'advisory', label: 'Eco Directive', icon: HelpCircle, num: '04' },
+    { id: 'profile', label: 'My Profile', icon: UserCircle2, num: '05' },
   ];
+
+  /** Extract initials from display name or email */
+  const initials = (() => {
+    const name = user?.displayName;
+    const email = user?.email ?? '';
+    if (name) {
+      const parts = name.trim().split(' ');
+      return parts.length >= 2
+        ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+        : name.slice(0, 2).toUpperCase();
+    }
+    return email.slice(0, 2).toUpperCase();
+  })();
 
   return (
     <aside className="hidden md:flex flex-col w-[72px] lg:w-[84px] h-full bg-[#00041d] border-r border-white/5 py-5 justify-between items-center shrink-0 z-30 relative shadow-2xl">
@@ -75,8 +92,33 @@ export const Sidebar = React.memo(function Sidebar({
         })}
       </nav>
 
-      {/* Bottom Panel Status Indicators */}
+      {/* Bottom Panel — User Avatar + Status */}
       <div className="flex flex-col items-center gap-4">
+        {/* User avatar button → profile tab */}
+        <button
+          id="sidebar-user-avatar"
+          onClick={() => setActiveSection('profile')}
+          title="My Profile"
+          aria-label="Open my profile"
+          className={`relative w-9 h-9 rounded-xl flex items-center justify-center font-grotesk text-xs font-bold transition-all duration-300 cursor-pointer ${
+            activeSection === 'profile'
+              ? 'bg-neon/20 border border-neon/40 text-neon shadow-[0_0_10px_rgba(111,255,0,0.2)]'
+              : 'bg-white/5 border border-white/10 text-cream/60 hover:text-neon hover:border-neon/20 hover:bg-neon/5'
+          }`}
+        >
+          {user?.photoURL ? (
+            <img
+              src={user.photoURL}
+              alt="User"
+              className="w-full h-full rounded-xl object-cover"
+            />
+          ) : (
+            <span>{initials}</span>
+          )}
+          {/* Online dot */}
+          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-neon border-2 border-[#00041d]" />
+        </button>
+
         <div className="flex flex-col items-center gap-1 font-mono text-[8.5px] text-[#9cb4e5]/40 uppercase tracking-widest">
           <Radio size={14} className="text-neon/50 animate-pulse" aria-hidden="true" />
           <span>NODE</span>
