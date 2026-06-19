@@ -7,10 +7,11 @@ coverage/
 .env*
 !.env.example
 
-# Excluded documentation files
+# Excluded documentation files (local dev only — do not commit)
 image.md
 elements.md
 WALKTHROUGH.md
 walkthrough.md
 DESIGN.md
 design.md
+FIREBASE_SETUP.md
