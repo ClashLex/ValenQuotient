@@ -6,6 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+.env
 
 # Excluded documentation files (local dev only — do not commit)
 image.md

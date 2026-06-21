@@ -48,11 +48,12 @@ describe('Carbon Calculator Logic & Constants', () => {
       const commuteMiles = 20; // 20 * 0.411 = 8.22
       const diet = 'vegan'; // 1.5
       const energyKwh = 300; // (300 / 30) * 0.384 = 3.84
-      
-      const total = (commuteMiles * TRANSPORT_BASE_RATE) + 
-                    DIET_EMISSION_SCORES[diet] + 
-                    ((energyKwh / 30) * ENERGY_BASE_RATE);
-      
+
+      const total =
+        commuteMiles * TRANSPORT_BASE_RATE +
+        DIET_EMISSION_SCORES[diet] +
+        (energyKwh / 30) * ENERGY_BASE_RATE;
+
       expect(total).toBeCloseTo(13.56, 2);
       expect(total.toFixed(1)).toBe('13.6');
     });

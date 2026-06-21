@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import App from '../App';
 import AboutSection from '../components/AboutSection';
 import CTASection from '../components/CTASection';
@@ -22,7 +22,10 @@ vi.mock('firebase/auth', async (importOriginal) => {
   return {
     ...actual,
     getAuth: vi.fn(() => ({})),
-    onAuthStateChanged: vi.fn((_auth, cb) => { cb(null); return vi.fn(); }),
+    onAuthStateChanged: vi.fn((_auth, cb) => {
+      cb(null);
+      return vi.fn();
+    }),
     signInWithEmailAndPassword: vi.fn(),
     createUserWithEmailAndPassword: vi.fn(),
     signInWithPopup: vi.fn(),
@@ -70,7 +73,7 @@ describe('App & Remaining Components Coverage', () => {
           onAddCategory={mockAddCategory}
           onDeleteCategory={mockDeleteCategory}
           onSelectNFT={mockSelectNFT}
-        />
+        />,
       );
 
       // Open add form
@@ -81,10 +84,10 @@ describe('App & Remaining Components Coverage', () => {
       const titleInput = screen.getByLabelText(/Tracker Title/i);
       const unitInput = screen.getByLabelText(/Unit Label/i);
       const submitBtn = screen.getByText(/Create Tracker/i);
-      
+
       fireEvent.change(titleInput, { target: { value: 'New Footprint' } });
       fireEvent.change(unitInput, { target: { value: 'LBS' } });
-      
+
       // diet mode
       const dietBtn = screen.getByRole('button', { name: /Diet/i });
       fireEvent.click(dietBtn);
@@ -100,7 +103,7 @@ describe('App & Remaining Components Coverage', () => {
       const setActiveSection = vi.fn();
       render(<AboutSection setActiveSection={setActiveSection} />);
       expect(screen.getByText(/WHY VALENQUOTIENT/i)).toBeInTheDocument();
-      
+
       const causesTab = screen.getByText('Causes');
       fireEvent.click(causesTab);
       expect(screen.getByText(/AWARENESS DEFICIT/i)).toBeInTheDocument();
@@ -131,8 +134,12 @@ describe('App & Remaining Components Coverage', () => {
       const onOpenAuth = vi.fn();
       render(
         <AuthProvider>
-          <Sidebar activeSection="home" setActiveSection={setActiveSection} onOpenAuth={onOpenAuth} />
-        </AuthProvider>
+          <Sidebar
+            activeSection="home"
+            setActiveSection={setActiveSection}
+            onOpenAuth={onOpenAuth}
+          />
+        </AuthProvider>,
       );
       const btn = screen.getByLabelText('Gap Matrix');
       fireEvent.click(btn);
@@ -144,13 +151,13 @@ describe('App & Remaining Components Coverage', () => {
     it('renders correctly with categoryItem and closes on escape', () => {
       const onClose = vi.fn();
       const mockCategory = DEFAULT_CATEGORIES[0];
-      
+
       const { container } = render(
-        <AdvisoryModal categoryItem={mockCategory} onClose={onClose} selectedValue={20} />
+        <AdvisoryModal categoryItem={mockCategory} onClose={onClose} selectedValue={20} />,
       );
-      
+
       expect(screen.getByText(/AI FOOTPRINT DIAGNOSTIC/i)).toBeInTheDocument();
-      
+
       fireEvent.keyDown(container, { key: 'Escape', code: 'Escape' });
       // Event listener is attached to document
       fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' });
@@ -159,7 +166,7 @@ describe('App & Remaining Components Coverage', () => {
 
     it('returns null if no categoryItem', () => {
       const { container } = render(
-        <AdvisoryModal categoryItem={null} onClose={vi.fn()} selectedValue={null} />
+        <AdvisoryModal categoryItem={null} onClose={vi.fn()} selectedValue={null} />,
       );
       expect(container).toBeEmptyDOMElement();
     });
@@ -167,10 +174,8 @@ describe('App & Remaining Components Coverage', () => {
     it('renders without crashing with categoryItem', () => {
       const onClose = vi.fn();
       const mockCategory = DEFAULT_CATEGORIES[0]; // Transport
-      render(
-        <AdvisoryModal categoryItem={mockCategory} onClose={onClose} selectedValue={20} />
-      );
-      
+      render(<AdvisoryModal categoryItem={mockCategory} onClose={onClose} selectedValue={20} />);
+
       expect(screen.getByText(/AI FOOTPRINT DIAGNOSTIC/i)).toBeInTheDocument();
     });
   });

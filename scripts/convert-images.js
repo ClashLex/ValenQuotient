@@ -18,9 +18,7 @@ async function convert() {
     if (fs.existsSync(pngPath)) {
       try {
         console.log(`Converting ${name}.png to WebP...`);
-        await sharp(pngPath)
-          .webp({ quality: 80 })
-          .toFile(webpPath);
+        await sharp(pngPath).webp({ quality: 80 }).toFile(webpPath);
         console.log(`Successfully created ${name}.webp`);
 
         // Delete the original png file

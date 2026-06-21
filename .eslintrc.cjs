@@ -6,19 +6,19 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
-    'prettier'
+    'prettier',
   ],
   ignorePatterns: ['dist', '.eslintrc.cjs', 'node_modules'],
   parser: '@typescript-eslint/parser',
   plugins: ['react', 'react-hooks', '@typescript-eslint'],
   settings: {
     react: {
-      version: 'detect'
-    }
+      version: 'detect',
+    },
   },
   rules: {
     'react/react-in-jsx-scope': 'off',
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
-    'react/no-unescaped-entities': 'off'
-  }
+    'react/no-unescaped-entities': 'off',
+  },
 };

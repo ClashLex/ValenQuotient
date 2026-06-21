@@ -100,7 +100,7 @@ function computeStreak(logs: DailyLog[], goalKg: number): number {
     const key = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
     // If it's today and not yet logged, skip (don't break streak for today)
     if (key === today) {
-      const log = logs.find(l => l.date === key);
+      const log = logs.find((l) => l.date === key);
       if (!log) {
         checkDate.setDate(checkDate.getDate() - 1);
         continue;
@@ -112,7 +112,7 @@ function computeStreak(logs: DailyLog[], goalKg: number): number {
       }
       break;
     }
-    const log = logs.find(l => l.date === key);
+    const log = logs.find((l) => l.date === key);
     if (!log || log.totalKg > goalKg) break;
     streak++;
     checkDate.setDate(checkDate.getDate() - 1);
@@ -149,9 +149,9 @@ export function useFootprintHistory(
     const breakdown = calcBreakdown(categories, trackerValues);
     const newLog: DailyLog = { date: key, totalKg, breakdown };
 
-    setHistory(prev => {
+    setHistory((prev) => {
       // Remove existing entry for today (update in place)
-      const filtered = prev.filter(l => l.date !== key);
+      const filtered = prev.filter((l) => l.date !== key);
       const updated = [...filtered, newLog].sort((a, b) => a.date.localeCompare(b.date));
       saveHistory(updated);
       return updated;
@@ -170,12 +170,12 @@ export function useFootprintHistory(
       const d = new Date();
       d.setDate(d.getDate() - i);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      slots.push(history.find(l => l.date === key) ?? null);
+      slots.push(history.find((l) => l.date === key) ?? null);
     }
     return slots;
   })();
 
-  const todayLog = history.find(l => l.date === todayKey()) ?? null;
+  const todayLog = history.find((l) => l.date === todayKey()) ?? null;
   const streak = computeStreak(history, goalKg);
 
   return { history, weekHistory, streak, todayLog, recordToday };

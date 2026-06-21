@@ -1,15 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Anton&family=Condiment&family=JetBrains+Mono&display=swap');
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
-  --font-grotesk: "Anton", sans-serif;
-  --font-cursive: "Condiment", cursive;
-  --font-condiment: "Condiment", cursive;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-grotesk: 'Anton', sans-serif;
+  --font-cursive: 'Condiment', cursive;
+  --font-condiment: 'Condiment', cursive;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   --color-background: #010828;
-  --color-cream: #EFF4FF;
-  --color-neon: #6FFF00;
+  --color-cream: #eff4ff;
+  --color-neon: #6fff00;
 }
 
 @layer utilities {
@@ -33,21 +33,31 @@
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.1) 100%);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.3) 0%,
+      transparent 40%,
+      transparent 60%,
+      rgba(255, 255, 255, 0.1) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
   }
 
   /* Custom glow effect and scroll behavior */
-  .glow-text-neon, .text-glow {
+  .glow-text-neon,
+  .text-glow {
     text-shadow: 0 0 15px rgba(111, 255, 0, 0.4);
   }
 
   .bg-nebula {
-    background: radial-gradient(circle at 30% 20%, rgba(111, 255, 0, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(183, 36, 255, 0.1) 0%, transparent 50%);
+    background:
+      radial-gradient(circle at 30% 20%, rgba(111, 255, 0, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(183, 36, 255, 0.1) 0%, transparent 50%);
   }
 }
 
@@ -67,9 +77,10 @@
   }
 }
 
-html, body {
+html,
+body {
   background-color: #010828;
-  color: #EFF4FF;
+  color: #eff4ff;
   overflow: hidden;
   height: 100%;
   height: 100dvh;
@@ -93,11 +104,13 @@ html, body {
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #6FFF00;
+  background: #6fff00;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, ::before, ::after {
+  *,
+  ::before,
+  ::after {
     animation-delay: -1ms !important;
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
@@ -110,4 +123,3 @@ html, body {
     display: none !important;
   }
 }
-

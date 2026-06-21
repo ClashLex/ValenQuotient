@@ -9,8 +9,14 @@ describe('Component Rendering Smoke Tests', () => {
   describe('HeroSection', () => {
     it('renders header text and brand elements correctly', () => {
       const mockSetActive = vi.fn();
-      render(<HeroSection setActiveSection={mockSetActive} categories={DEFAULT_CATEGORIES} trackerValues={{}} />);
-      
+      render(
+        <HeroSection
+          setActiveSection={mockSetActive}
+          categories={DEFAULT_CATEGORIES}
+          trackerValues={{}}
+        />,
+      );
+
       // Check for prominent header title text
       const heading = screen.getByRole('heading', { level: 1 });
       expect(heading).toBeInTheDocument();
@@ -28,7 +34,7 @@ describe('Component Rendering Smoke Tests', () => {
       const mockTrackerValues = {
         'eco-01': 15,
         'eco-02': 'vegetarian',
-        'eco-03': 240
+        'eco-03': 240,
       };
 
       render(
@@ -39,12 +45,12 @@ describe('Component Rendering Smoke Tests', () => {
           onAddCategory={mockAddCategory}
           onDeleteCategory={mockDeleteCategory}
           onSelectNFT={mockSelectNFT}
-        />
+        />,
       );
 
       // Check that the list side-pane header is rendered
       expect(screen.getByText('CO₂ ASSISTANTS')).toBeInTheDocument();
-      
+
       // Check that the tabs are present
       expect(screen.getByText('💬 Calc')).toBeInTheDocument();
       expect(screen.getByText('📊 Trend')).toBeInTheDocument();
@@ -52,4 +58,3 @@ describe('Component Rendering Smoke Tests', () => {
     });
   });
 });
-

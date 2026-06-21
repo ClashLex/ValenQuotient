@@ -13,64 +13,68 @@ export default function AboutSection({ setActiveSection }: AboutSectionProps) {
       id: 'understand',
       title: '1. UNDERSTAND',
       status: 'AWARENESS DEFICIT',
-      description: 'Most people do not know what a carbon footprint is or how their daily habits contribute to it.',
+      description:
+        'Most people do not know what a carbon footprint is or how their daily habits contribute to it.',
       stat: '78%',
       statLabel: 'CARBON LITERACY DEFICIT',
-      color: '#6FFF00'
+      color: '#6FFF00',
     },
     {
       id: 'track',
       title: '2. TRACK',
       status: 'FRAGMENTED LIFE DATA',
-      description: 'There is no simple, unified way for individuals to monitor emissions across lifestyle categories.',
+      description:
+        'There is no simple, unified way for individuals to monitor emissions across lifestyle categories.',
       stat: '0',
       statLabel: 'NO INTEGRATED TRACKERS',
-      color: '#b724ff'
+      color: '#b724ff',
     },
     {
       id: 'reduce',
       title: '3. REDUCE',
       status: 'GENERIC RECOMMENDATIONS',
-      description: 'Generic advice exists, but personalized, actionable steps based on individual data are rare.',
+      description:
+        'Generic advice exists, but personalized, actionable steps based on individual data are rare.',
       stat: '-15%',
       statLabel: 'TARGET DECELERATION GAP',
-      color: '#3b82f6'
-    }
+      color: '#3b82f6',
+    },
   ];
 
   const rootCauses = [
     {
       title: 'AWARENESS DEFICIT',
-      desc: 'Climate data is buried in reports and academic papers, completely hidden from everyday consumers.'
+      desc: 'Climate data is buried in reports and academic papers, completely hidden from everyday consumers.',
     },
     {
       title: 'FRAGMENTED DATA',
-      desc: "Carbon impact spans transports, diets, heating fuels, and grocery logs—rendered without a central accumulator."
+      desc: 'Carbon impact spans transports, diets, heating fuels, and grocery logs—rendered without a central accumulator.',
     },
     {
       title: 'MOTIVATION VOID',
-      desc: 'Users know they "should" reduce emissions but lack interactive feedback loops to make changes meaningful.'
+      desc: 'Users know they "should" reduce emissions but lack interactive feedback loops to make changes meaningful.',
     },
     {
       title: 'GENERIC RECTIFICATION',
-      desc: 'Existing templates push identical tips to everyone, neglecting personal geolocation and daily habits.'
-    }
+      desc: 'Existing templates push identical tips to everyone, neglecting personal geolocation and daily habits.',
+    },
   ];
 
   return (
-    <section id="gallery" className="relative w-full overflow-hidden rounded-2xl border border-white/5 bg-[#010828]/40 p-4 sm:p-6 md:p-8 text-cream select-none">
-      
+    <section
+      id="gallery"
+      className="relative w-full overflow-hidden rounded-2xl border border-white/5 bg-[#010828]/40 p-4 sm:p-6 md:p-8 text-cream select-none"
+    >
       {/* Background Image */}
-      <div 
+      <div
         className="absolute inset-0 z-0 bg-cover bg-center opacity-10 filter grayscale scale-105"
         style={{
-          backgroundImage: `url('https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=1220&auto=format&fit=crop')`
+          backgroundImage: `url('https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=1220&auto=format&fit=crop')`,
         }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-[#010828] via-[#010828]/90 to-[#010828] z-10" />
 
       <div className="relative w-full z-20 flex flex-col gap-6">
-        
         {/* Section Header */}
         <div className="flex flex-col gap-4">
           <div className="flex flex-col">
@@ -115,7 +119,13 @@ export default function AboutSection({ setActiveSection }: AboutSectionProps) {
               >
                 {/* Visual marker */}
                 <div className="absolute top-4 right-4 flex items-center justify-center w-7 h-7 rounded-full bg-white/[0.02] border border-white/5 group-hover:border-neon/30 group-hover:text-neon transition-all">
-                  {index === 0 ? <BookOpen size={13} /> : index === 1 ? <Footprints size={13} /> : <TrendingDown size={13} />}
+                  {index === 0 ? (
+                    <BookOpen size={13} />
+                  ) : index === 1 ? (
+                    <Footprints size={13} />
+                  ) : (
+                    <TrendingDown size={13} />
+                  )}
                 </div>
 
                 <div className="pr-8">
@@ -131,7 +141,7 @@ export default function AboutSection({ setActiveSection }: AboutSectionProps) {
                 </div>
 
                 <div className="pt-5 border-t border-white/5 flex items-baseline gap-3 mt-5">
-                  <span 
+                  <span
                     className="font-grotesk text-[36px] leading-none"
                     style={{ textShadow: `0 0 10px ${gap.color}40`, color: gap.color }}
                   >
@@ -180,13 +190,25 @@ export default function AboutSection({ setActiveSection }: AboutSectionProps) {
               <span className="font-mono text-[10px] text-neon uppercase tracking-widest mb-4 block">
                 [ VALENQUOTIENT LOGICAL CORE ENGINE ]
               </span>
-              
+
               <div className="space-y-4 relative z-10 w-full">
                 {[
-                  { step: 'INPUT LAYER', details: 'DAILY COMMUTE HABITS • DIET • HOME KWH METRICS' },
-                  { step: 'EMISSIONS ENGINE', details: 'CO₂ QUANTIFICATION VIA IPCC COEFFICIENT DATA' },
-                  { step: 'AI DECISION MODULE', details: 'REDUCTION PLANS ADAPTED TO GEOLOCATION HABITS' },
-                  { step: 'STREAKS & ACHIEVEMENTS', details: 'GOALS, MICRO-CHALLENGES, BADGE REWARDS' }
+                  {
+                    step: 'INPUT LAYER',
+                    details: 'DAILY COMMUTE HABITS • DIET • HOME KWH METRICS',
+                  },
+                  {
+                    step: 'EMISSIONS ENGINE',
+                    details: 'CO₂ QUANTIFICATION VIA IPCC COEFFICIENT DATA',
+                  },
+                  {
+                    step: 'AI DECISION MODULE',
+                    details: 'REDUCTION PLANS ADAPTED TO GEOLOCATION HABITS',
+                  },
+                  {
+                    step: 'STREAKS & ACHIEVEMENTS',
+                    details: 'GOALS, MICRO-CHALLENGES, BADGE REWARDS',
+                  },
                 ].map((item, idx) => (
                   <div key={idx} className="flex items-start gap-3">
                     <div className="flex flex-col items-center shrink-0">
@@ -196,8 +218,12 @@ export default function AboutSection({ setActiveSection }: AboutSectionProps) {
                       {idx < 3 && <div className="w-px h-8 bg-white/10 my-1" />}
                     </div>
                     <div className="flex flex-col pt-0.5 min-w-0">
-                      <span className="font-grotesk text-xs sm:text-sm text-cream tracking-widest leading-tight">{item.step}</span>
-                      <span className="font-mono text-[9px] uppercase text-cream/40 tracking-wider mt-0.5 leading-relaxed">{item.details}</span>
+                      <span className="font-grotesk text-xs sm:text-sm text-cream tracking-widest leading-tight">
+                        {item.step}
+                      </span>
+                      <span className="font-mono text-[9px] uppercase text-cream/40 tracking-wider mt-0.5 leading-relaxed">
+                        {item.details}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -213,41 +239,49 @@ export default function AboutSection({ setActiveSection }: AboutSectionProps) {
             {/* Explanatory block */}
             <div className="flex flex-col justify-between gap-5">
               <div>
-                <span className="font-mono text-[10px] text-[#b724ff] uppercase tracking-widest">PROPULSIVE REMEDIATION</span>
+                <span className="font-mono text-[10px] text-[#b724ff] uppercase tracking-widest">
+                  PROPULSIVE REMEDIATION
+                </span>
                 <h3 className="font-grotesk text-xl sm:text-3xl text-cream tracking-wide uppercase mt-1 mb-4">
                   ValenQuotient — Carbon Intelligence Protocol
                 </h3>
                 <p className="font-mono text-[11px] uppercase tracking-wide leading-relaxed text-[#9cb4e5] mb-5">
-                  A unified environmental tracking framework. Granular user profiling, instant calculations, and smart goals build accountability loops for a greener planetary balance.
+                  A unified environmental tracking framework. Granular user profiling, instant
+                  calculations, and smart goals build accountability loops for a greener planetary
+                  balance.
                 </p>
 
                 <div className="space-y-3">
                   {[
                     'SIMPLE ONBOARDING IN < 2 SECONDS',
                     'GUILT-FREE FRAMING, MICRO WIN REWARDS',
-                    'ANONYMIZED COMMUNITY LEDGER'
+                    'ANONYMIZED COMMUNITY LEDGER',
                   ].map((bullet, idx) => (
                     <div key={idx} className="flex items-center gap-3">
                       <div className="w-1.5 h-1.5 rounded-full bg-neon shadow-[0_0_8px_#6FFF00] shrink-0" />
-                      <span className="font-mono text-[10px] tracking-widest uppercase text-cream/80">{bullet}</span>
+                      <span className="font-mono text-[10px] tracking-widest uppercase text-cream/80">
+                        {bullet}
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
 
               <div className="pt-5 border-t border-white/5">
-                <button 
-                  onClick={() => setActiveSection('trackers')} 
+                <button
+                  onClick={() => setActiveSection('trackers')}
                   className="inline-flex items-center gap-2 group text-neon font-grotesk text-xs tracking-widest uppercase cursor-pointer bg-transparent border-none outline-none"
                 >
                   <span>CALCULATE Baseline Footprint</span>
-                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight
+                    size={14}
+                    className="group-hover:translate-x-1 transition-transform"
+                  />
                 </button>
               </div>
             </div>
           </div>
         )}
-
       </div>
     </section>
   );

@@ -264,7 +264,7 @@ export default function AdvisoryModal({
           },
           {
             title: 'COLD TEMPERATURE WASHES',
-            tip: 'Perform laundry wash cycles at 30°C/Cold. Heating water draws up to 90% of a washing machine\'s absolute power capacity.',
+            tip: "Perform laundry wash cycles at 30°C/Cold. Heating water draws up to 90% of a washing machine's absolute power capacity.",
           },
         ];
       }
@@ -343,7 +343,9 @@ export default function AdvisoryModal({
 
           {/* Emission overlay */}
           <div className="absolute bottom-3 left-3 right-3 liquid-glass rounded-xl p-3 border border-white/10 z-10">
-            <span className="font-mono text-[9px] text-[#9cb4e5] uppercase">Live Emission Index</span>
+            <span className="font-mono text-[9px] text-[#9cb4e5] uppercase">
+              Live Emission Index
+            </span>
             <div className="flex justify-between items-end mt-1">
               <div className="flex items-center gap-1.5">
                 <Footprints size={13} className="text-neon" aria-hidden="true" />

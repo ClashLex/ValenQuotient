@@ -1,5 +1,13 @@
 import React from 'react';
-import { Home, BarChart3, MessageSquare, HelpCircle, Radio, UserCircle2, LucideIcon } from 'lucide-react';
+import {
+  Home,
+  BarChart3,
+  MessageSquare,
+  HelpCircle,
+  Radio,
+  UserCircle2,
+  LucideIcon,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
@@ -79,7 +87,9 @@ export const Sidebar = React.memo(function Sidebar({
             >
               <IconComponent
                 size={18}
-                className={isActive ? 'scale-110 text-neon' : 'group-hover:scale-105 transition-transform'}
+                className={
+                  isActive ? 'scale-110 text-neon' : 'group-hover:scale-105 transition-transform'
+                }
               />
               <span className="font-mono text-[7px] uppercase tracking-widest leading-none mt-0.5 scale-90">
                 {isActive ? 'OPEN' : tab.num}
@@ -99,7 +109,7 @@ export const Sidebar = React.memo(function Sidebar({
         {/* User avatar button → profile tab (signed in) or auth modal (guest) */}
         <button
           id="sidebar-user-avatar"
-          onClick={() => user ? setActiveSection('profile') : onOpenAuth()}
+          onClick={() => (user ? setActiveSection('profile') : onOpenAuth())}
           title={user ? 'My Profile' : 'Sign In'}
           aria-label={user ? 'Open my profile' : 'Sign in'}
           className={`relative w-9 h-9 rounded-xl flex items-center justify-center font-grotesk text-xs font-bold transition-all duration-300 cursor-pointer ${
@@ -109,11 +119,7 @@ export const Sidebar = React.memo(function Sidebar({
           }`}
         >
           {user?.photoURL ? (
-            <img
-              src={user.photoURL}
-              alt="User"
-              className="w-full h-full rounded-xl object-cover"
-            />
+            <img src={user.photoURL} alt={`${user.displayName || 'User'} profile avatar`} className="w-full h-full rounded-xl object-cover" />
           ) : (
             <span>{initials}</span>
           )}

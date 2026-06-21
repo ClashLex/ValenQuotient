@@ -68,19 +68,25 @@ With ValenQuotient, users can model, understand, and visualize the impact of the
 ## 💻 Local Development
 
 ### 1. Install Project Dependencies
+
 ```bash
 npm install
 ```
 
 ### 2. Start the Development Server
+
 ```bash
 npm run dev
 ```
+
 The application will boot and bind to [http://localhost:3000](http://localhost:3000) (or ports 3001/3002 if 3000 is occupied).
 
 ### 3. Build for Production
+
 To bundle a production-ready, highly compressed static build:
+
 ```bash
 npm run build
 ```
+
 This outputs static assets into the `/dist` directory.
