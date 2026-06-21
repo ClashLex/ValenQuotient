@@ -59,14 +59,14 @@ function AppInner() {
           if (data.categories) setCategories(data.categories);
           if (data.trackerValues) setTrackerValues(data.trackerValues);
         }
-      } catch (_) {
+      } catch {
         // Fall back to localStorage silently
       } finally {
         if (!cancelled) setDataReady(true);
       }
     })();
     return () => { cancelled = true; };
-  }, [user?.uid]);
+  }, [user]);
 
   // ── Sync categories ───────────────────────────────────────────────────────
   useEffect(() => {

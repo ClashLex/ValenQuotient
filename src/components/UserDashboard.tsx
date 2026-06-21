@@ -4,8 +4,6 @@ import {
   LogOut,
   Leaf,
   TrendingDown,
-  Award,
-  Zap,
   Globe,
   Calendar,
   ChevronRight,
@@ -155,7 +153,6 @@ function GuestView({ onOpenAuth }: { onOpenAuth: () => void }) {
 
 export default function UserDashboard({ categories, trackerValues, onOpenAuth }: UserDashboardProps) {
   const { user, signOut } = useAuth();
-  if (!user) return <GuestView onOpenAuth={onOpenAuth} />;
   const [joinDate, setJoinDate] = useState<string | null>(null);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState(user?.displayName ?? '');
@@ -209,7 +206,7 @@ export default function UserDashboard({ categories, trackerValues, onOpenAuth }:
       await updateProfile(user, { displayName: newName.trim() });
       await updateDoc(doc(db, 'users', user.uid), { displayName: newName.trim() });
       setEditingName(false);
-    } catch (_) {
+    } catch {
       // silently fail
     } finally {
       setSavingName(false);
@@ -224,6 +221,8 @@ export default function UserDashboard({ categories, trackerValues, onOpenAuth }:
   const radius = 52;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - pct / 100);
+
+  if (!user) return <GuestView onOpenAuth={onOpenAuth} />;
 
   return (
     <section id="profile" className="relative w-full rounded-2xl flex flex-col bg-[#010828]/40 select-none border border-white/5 p-4 sm:p-6 gap-5 overflow-y-auto">

@@ -94,7 +94,7 @@ function computeStreak(logs: DailyLog[], goalKg: number): number {
   if (!logs.length || goalKg <= 0) return 0;
   const today = todayKey();
   let streak = 0;
-  let checkDate = new Date();
+  const checkDate = new Date();
 
   for (let i = 0; i < 365; i++) {
     const key = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
