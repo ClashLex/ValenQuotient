@@ -6,11 +6,13 @@ import {
   Heart, 
   MoreVertical,
   Trash2,
+  Flame,
 } from 'lucide-react';
 import { CarbonCategory } from '../types';
 import {
   DIET_EMISSION_SCORES,
 } from '../constants/emissions';
+import { useFootprintHistory } from '../hooks/useFootprintHistory';
 
 interface CollectionSectionProps {
   categories: CarbonCategory[];
@@ -59,6 +61,15 @@ export default function CollectionSection({
   });
   const [mobShowThread, setMobShowThread] = useState<boolean>(false);
 
+  // Daily goal state (persisted)
+  const [goalKgDay, setGoalKgDay] = useState<number>(() => {
+    const saved = localStorage.getItem('vq_goal_kg_day');
+    return saved ? Number(saved) : Math.round((4700 / 365) * 10) / 10; // ≈ 12.9 kg/day
+  });
+
+  // Daily history hook — records today automatically on each render with new values
+  const { weekHistory, streak } = useFootprintHistory(categories, trackerValues, goalKgDay);
+
   // Custom Category Add Form states
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
@@ -74,6 +85,10 @@ export default function CollectionSection({
   useEffect(() => {
     localStorage.setItem('vq_completed_challenges', JSON.stringify(completedChallenges));
   }, [completedChallenges]);
+
+  useEffect(() => {
+    localStorage.setItem('vq_goal_kg_day', String(goalKgDay));
+  }, [goalKgDay]);
 
   /**
    * Calculates carbon emissions in kg per day for a specific category.
@@ -198,6 +213,14 @@ export default function CollectionSection({
             </button>
           ))}
         </div>
+
+        {/* Streak badge */}
+        {streak > 0 && (
+          <div className="flex items-center gap-1 bg-orange-500/10 border border-orange-500/20 px-2 py-1 rounded-lg shrink-0">
+            <Flame size={11} className="text-orange-400" />
+            <span className="font-mono text-[9px] text-orange-300 font-bold">{streak}d</span>
+          </div>
+        )}
 
         {/* Live CO2 Pill */}
         <div className="flex items-center gap-1.5 bg-[#010828] border border-white/5 px-2.5 py-1.5 rounded-lg shrink-0">
@@ -607,7 +630,7 @@ export default function CollectionSection({
                   <span className="font-mono text-[8px] text-[#b724ff] uppercase tracking-widest block">[ TELEMETRY ]</span>
                   <p className="font-grotesk text-base text-cream uppercase mt-1">CARBON STATUS</p>
                   <p className="font-mono text-[10px] text-[#9cb4e5]/60 mt-2 uppercase leading-relaxed">
-                    Simulated daily fluctuations based on lifestyle variables mapped against IPCC-2026 limits.
+                    Daily footprint against your goal and global benchmarks.
                   </p>
                   <div className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-2 font-mono text-[10px]">
                     <div className="flex justify-between">
@@ -622,6 +645,14 @@ export default function CollectionSection({
                       <span className="text-[#b724ff]">PURCHASED OFFSETS:</span>
                       <span className="text-[#b724ff] font-bold">-{offsetReduction.toFixed(1)} KG</span>
                     </div>
+                    <div className="flex justify-between border-t border-white/5 pt-2 mt-1">
+                      <span className="text-cream/55">DAILY GOAL:</span>
+                      <span className="text-cream font-bold">{goalKgDay.toFixed(1)} KG</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-orange-400">CURRENT STREAK:</span>
+                      <span className="text-orange-400 font-bold">{streak} DAY{streak !== 1 ? 'S' : ''}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -633,36 +664,82 @@ export default function CollectionSection({
 
               <div className="md:col-span-8 flex flex-col justify-between bg-white/[0.01] border border-white/5 rounded-2xl p-4">
                 <div>
-                  <span className="font-mono text-[9px] text-[#b724ff] uppercase tracking-widest block">Weekly Emissions Trend</span>
-                  <div className="w-full h-40 select-none relative mt-3">
-                    <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 600 150">
-                      <defs>
-                        <linearGradient id="glowMap" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#6FFF00" stopOpacity="0.25"/>
-                          <stop offset="100%" stopColor="#6FFF00" stopOpacity="0"/>
-                        </linearGradient>
-                      </defs>
-                      <line x1="0" y1="30" x2="600" y2="30" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                      <line x1="0" y1="75" x2="600" y2="75" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                      <line x1="0" y1="120" x2="600" y2="120" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                      <text x="5" y="115" className="fill-cream/20 font-mono text-[8px] uppercase">Zero Carbon Baseline</text>
-                      <circle cx="600" cy="50" r="3" fill="#6FFF00" />
-                      {(() => {
-                        const mappedY = Math.max(15, Math.min(135, 135 - (parseFloat(totalCo2) * 4.5)));
-                        return (
-                          <>
-                            <path d={`M0,135 Q100,50 200,90 T400,30 T600,${mappedY} L600,135 Z`} fill="url(#glowMap)" />
-                            <path d={`M0,135 Q100,50 200,90 T400,30 T600,${mappedY}`} fill="none" stroke="#6FFF00" strokeWidth="2.5" />
-                          </>
-                        );
-                      })()}
-                    </svg>
-                  </div>
+                  <span className="font-mono text-[9px] text-[#b724ff] uppercase tracking-widest block">7-Day Emissions History</span>
+                  
+                  {/* Real 7-day bar chart */}
+                  {(() => {
+                    const DAY_LABELS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+                    // Get label for each slot relative to today
+                    const slotLabels = weekHistory.map((_, i) => {
+                      const d = new Date();
+                      d.setDate(d.getDate() - (6 - i));
+                      return DAY_LABELS[d.getDay() === 0 ? 6 : d.getDay() - 1];
+                    });
+                    const values = weekHistory.map(l => l?.totalKg ?? null);
+                    const maxVal = Math.max(...values.filter((v): v is number => v !== null), goalKgDay, 1);
+                    return (
+                      <div className="w-full mt-4">
+                        {/* Goal line indicator */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-4 h-px bg-yellow-400/60 border-dashed" style={{ borderTop: '1px dashed' }} />
+                          <span className="font-mono text-[8px] text-yellow-400/70 uppercase">Goal: {goalKgDay.toFixed(1)} kg/d</span>
+                        </div>
+                        <div className="flex items-end gap-2 h-36 w-full">
+                          {weekHistory.map((log, i) => {
+                            const kg = log?.totalKg ?? null;
+                            const barH = kg !== null ? Math.max(4, (kg / maxVal) * 100) : 0;
+                            const goalH = (goalKgDay / maxVal) * 100;
+                            const isToday = i === 6;
+                            const isBelow = kg !== null && kg <= goalKgDay;
+                            return (
+                              <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group">
+                                <div className="relative w-full flex flex-col items-center justify-end" style={{ height: '120px' }}>
+                                  {/* Goal marker line */}
+                                  <div
+                                    className="absolute w-full border-t border-dashed border-yellow-400/40 z-10"
+                                    style={{ bottom: `${goalH}%` }}
+                                  />
+                                  {/* Bar */}
+                                  {kg !== null ? (
+                                    <div
+                                      className={`w-full rounded-t-md transition-all duration-500 ${
+                                        isBelow
+                                          ? isToday ? 'bg-neon shadow-[0_0_8px_rgba(111,255,0,0.4)]' : 'bg-neon/60'
+                                          : isToday ? 'bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.4)]' : 'bg-orange-400/50'
+                                      }`}
+                                      style={{ height: `${barH}%` }}
+                                      title={`${kg.toFixed(1)} kg CO₂`}
+                                    />
+                                  ) : (
+                                    <div className="w-full rounded-t-md bg-white/5" style={{ height: '8%' }} />
+                                  )}
+                                </div>
+                                <span className={`font-mono text-[7px] uppercase ${
+                                  isToday ? 'text-neon font-bold' : 'text-cream/30'
+                                }`}>
+                                  {slotLabels[i]}
+                                </span>
+                                {kg !== null && (
+                                  <span className="font-mono text-[7px] text-cream/40">{kg.toFixed(0)}</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="flex justify-between items-center mt-3 font-mono text-[8px] text-cream/25 uppercase">
+                          <span>0 kg</span>
+                          <span>Max: {maxVal.toFixed(1)} kg</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
-                <div className="flex justify-between items-center text-cream/40 font-mono text-[8px] uppercase tracking-widest mt-3">
-                  <span>[ MON ]</span>
-                  <span>[ WED ]</span>
-                  <span>[ Projection ]</span>
+
+                <div className="flex justify-between items-center text-cream/40 font-mono text-[8px] uppercase tracking-widest mt-3 border-t border-white/5 pt-3">
+                  <span>[ 7-DAY LOG ]</span>
+                  <span className={`${ streak > 0 ? 'text-orange-400' : 'text-cream/25'}`}>
+                    {streak > 0 ? `🔥 ${streak} day streak` : '[ NO STREAK YET ]'}
+                  </span>
                 </div>
               </div>
 
@@ -693,6 +770,38 @@ export default function CollectionSection({
                   <div className="flex justify-between items-center pt-1 font-mono text-[10px] uppercase">
                     <span>Reforestation: <strong className="text-cream">{offsetTons * 40} Saplings</strong></span>
                     <span>Value: <strong className="text-neon">${offsetTons * 15} USD</strong></span>
+                  </div>
+                </div>
+
+                {/* Goal Setting Widget */}
+                <div className="space-y-3 bg-[#010828] border border-neon/10 p-4 rounded-xl mb-4">
+                  <span className="font-mono text-[8px] text-neon uppercase tracking-widest block">[ Daily Carbon Goal ]</span>
+                  <div className="flex justify-between font-mono text-[10px] text-cream/55 uppercase">
+                    <label htmlFor="goal-slider" className="mb-0">Target:</label>
+                    <span className="text-neon">{goalKgDay.toFixed(1)} kg CO₂ / day</span>
+                  </div>
+                  <input
+                    id="goal-slider"
+                    type="range" min="2" max="30" step="0.5" value={goalKgDay}
+                    onChange={(e) => setGoalKgDay(Number(e.target.value))}
+                    className="w-full accent-neon cursor-pointer h-1.5 bg-white/10 rounded-lg outline-none"
+                  />
+                  <div className="flex justify-between items-center pt-1 font-mono text-[10px] uppercase">
+                    <span className="text-cream/40">Global avg: 12.9 kg/d</span>
+                    <span className={`font-bold ${
+                      parseFloat(totalCo2) <= goalKgDay ? 'text-neon' : 'text-orange-400'
+                    }`}>
+                      {parseFloat(totalCo2) <= goalKgDay ? '✓ ON TARGET' : `${(parseFloat(totalCo2) - goalKgDay).toFixed(1)} KG OVER`}
+                    </span>
+                  </div>
+                  {/* Goal progress bar */}
+                  <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        parseFloat(totalCo2) <= goalKgDay ? 'bg-neon' : 'bg-orange-400'
+                      }`}
+                      style={{ width: `${Math.min(100, (parseFloat(totalCo2) / goalKgDay) * 100).toFixed(0)}%` }}
+                    />
                   </div>
                 </div>
 

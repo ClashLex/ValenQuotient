@@ -9,7 +9,7 @@ describe('Component Rendering Smoke Tests', () => {
   describe('HeroSection', () => {
     it('renders header text and brand elements correctly', () => {
       const mockSetActive = vi.fn();
-      render(<HeroSection setActiveSection={mockSetActive} />);
+      render(<HeroSection setActiveSection={mockSetActive} categories={DEFAULT_CATEGORIES} trackerValues={{}} />);
       
       // Check for prominent header title text
       const heading = screen.getByRole('heading', { level: 1 });

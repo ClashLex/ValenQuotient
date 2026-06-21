@@ -248,7 +248,11 @@ function AppInner() {
               <Suspense fallback={<LoadingSpinner />}>
                 {activeSection === 'home' && (
                   <div className="animate-in fade-in zoom-in-98 duration-300">
-                    <HeroSection setActiveSection={setActiveSection} />
+                    <HeroSection
+                      setActiveSection={setActiveSection}
+                      categories={categories}
+                      trackerValues={trackerValues}
+                    />
                   </div>
                 )}
                 {activeSection === 'analysis' && (

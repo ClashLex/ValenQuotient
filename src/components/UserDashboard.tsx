@@ -17,12 +17,16 @@ import {
   Shield,
   Cloud,
   BarChart3,
+  Flame,
+  Target,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { db } from '../firebase';
 import { CarbonCategory } from '../types';
+import { useFootprintHistory, calcDailyKg } from '../hooks/useFootprintHistory';
+import { DIET_EMISSION_SCORES } from '../constants/emissions';
 
 interface UserDashboardProps {
   categories: CarbonCategory[];
@@ -41,26 +45,42 @@ function getInitials(name: string | null, email: string | null): string {
   return (email ?? 'EW').slice(0, 2).toUpperCase();
 }
 
-/** Calculate total CO₂ from tracker values */
-function calcTotalCO2(categories: CarbonCategory[], values: Record<string, string | number>): number {
-  let total = 0;
-  for (const cat of categories) {
-    const val = values[cat.id];
-    if (cat.category === 'Diet') continue; // qualitative
-    if (typeof val === 'number' && !isNaN(val)) {
-      total += val * cat.baseRate;
-    }
+/** Calculate annualised total CO₂ (kg/year) from tracker values.
+ *  Uses the same formula as CollectionSection / useFootprintHistory so all
+ *  tabs are consistent.
+ */
+function calcAnnualCO2(
+  categories: CarbonCategory[],
+  values: Record<string, string | number>,
+): number {
+  return calcDailyKg(categories, values) * 365;
+}
+
+/** For the tracker breakdown pane: per-category annual kg */
+function calcCategoryKgYear(
+  cat: CarbonCategory,
+  values: Record<string, string | number>,
+): number | null {
+  const val = values[cat.id];
+  if (cat.category === 'Transport') return (Number(val) || 0) * cat.baseRate * 365;
+  if (cat.category === 'Diet') {
+    const selection = (val || 'vegetarian') as keyof typeof DIET_EMISSION_SCORES;
+    return DIET_EMISSION_SCORES[selection] * 365;
   }
-  return total;
+  if (cat.category === 'Energy') return ((Number(val) || 0) / 30) * cat.baseRate * 365;
+  if (typeof val === 'number') return val * cat.baseRate * 365;
+  return null;
 }
 
 const GLOBAL_AVERAGE_KG = 4700; // kg CO₂ per year global mean
+/** Default daily goal = global average ÷ 365, rounded to 1 decimal */
+const DEFAULT_GOAL_KG_DAY = Math.round((GLOBAL_AVERAGE_KG / 365) * 10) / 10; // ≈ 12.9 kg/day
 
 const BADGES = [
-  { id: 'joined', icon: '🌱', label: 'Eco Pioneer', desc: 'Joined ValenQuotient', unlocked: true },
-  { id: 'tracker', icon: '📊', label: 'Data Analyst', desc: 'Tracked 3+ categories', unlocked: true },
-  { id: 'low', icon: '🏆', label: 'Climate Champion', desc: 'Below global average CO₂', unlocked: false },
-  { id: 'streak', icon: '🔥', label: 'Streak Master', desc: 'Active 7 days in a row', unlocked: false },
+  { id: 'joined',  icon: '🌱', label: 'Eco Pioneer',       desc: 'Joined ValenQuotient',         unlocked: true  },
+  { id: 'tracker', icon: '📊', label: 'Data Analyst',       desc: 'Tracked 3+ categories',         unlocked: true  },
+  { id: 'low',     icon: '🏆', label: 'Climate Champion',   desc: 'Below global average CO₂',      unlocked: false },
+  { id: 'streak',  icon: '🔥', label: 'Streak Master',      desc: '7 days below daily goal',       unlocked: false },
 ];
 
 /** Guest (not signed in) view */
@@ -141,17 +161,36 @@ export default function UserDashboard({ categories, trackerValues, onOpenAuth }:
   const [newName, setNewName] = useState(user?.displayName ?? '');
   const [savingName, setSavingName] = useState(false);
 
+  // Load persisted daily goal
+  const [goalKgDay] = useState<number>(() => {
+    const saved = localStorage.getItem('vq_goal_kg_day');
+    return saved ? Number(saved) : DEFAULT_GOAL_KG_DAY;
+  });
+
+  const { streak, history } = useFootprintHistory(categories, trackerValues, goalKgDay);
+
   const initials = getInitials(user?.displayName ?? null, user?.email ?? null);
-  const totalCO2 = calcTotalCO2(categories, trackerValues);
+  // Annual CO₂ now includes all categories including diet
+  const totalCO2 = calcAnnualCO2(categories, trackerValues);
+  const dailyKg  = calcDailyKg(categories, trackerValues);
   const globalAvg = GLOBAL_AVERAGE_KG;
   const pct = Math.min(100, Math.round((totalCO2 / globalAvg) * 100));
   const belowAverage = totalCO2 < globalAvg;
   const reduction = belowAverage ? Math.round(((globalAvg - totalCO2) / globalAvg) * 100) : 0;
 
-  // Update 'Climate Champion' badge if below average
-  const badges = BADGES.map(b =>
-    b.id === 'low' ? { ...b, unlocked: belowAverage } : b
-  );
+  // Days on target this month
+  const daysOnTarget = history.filter(l => {
+    const d = new Date(l.date);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && l.totalKg <= goalKgDay;
+  }).length;
+
+  // Update badges dynamically
+  const badges = BADGES.map(b => {
+    if (b.id === 'low')    return { ...b, unlocked: belowAverage };
+    if (b.id === 'streak') return { ...b, unlocked: streak >= 7 };
+    return b;
+  });
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -274,7 +313,7 @@ export default function UserDashboard({ categories, trackerValues, onOpenAuth }:
           {
             label: 'Total CO₂',
             value: `${(totalCO2 / 1000).toFixed(2)}t`,
-            sub: 'annual tracked',
+            sub: 'annual (all sources)',
             icon: Globe,
             color: belowAverage ? 'text-neon' : 'text-orange-400',
           },
@@ -286,18 +325,18 @@ export default function UserDashboard({ categories, trackerValues, onOpenAuth }:
             color: belowAverage ? 'text-neon' : 'text-red-400',
           },
           {
-            label: 'Active Trackers',
-            value: `${categories.length}`,
-            sub: `categories`,
-            icon: Zap,
-            color: 'text-blue-400',
+            label: 'Current Streak',
+            value: `${streak}d`,
+            sub: streak >= 7 ? '🔥 Goal master!' : `goal: ${goalKgDay} kg/d`,
+            icon: Flame,
+            color: streak >= 7 ? 'text-orange-400' : streak > 0 ? 'text-neon' : 'text-cream/40',
           },
           {
-            label: 'Badges Earned',
-            value: `${badges.filter(b => b.unlocked).length}/${badges.length}`,
-            sub: 'achievements',
-            icon: Award,
-            color: 'text-[#b724ff]',
+            label: 'Days on Target',
+            value: `${daysOnTarget}`,
+            sub: 'this month',
+            icon: Target,
+            color: daysOnTarget > 15 ? 'text-neon' : 'text-[#b724ff]',
           },
         ].map((stat, i) => (
           <div
@@ -312,6 +351,31 @@ export default function UserDashboard({ categories, trackerValues, onOpenAuth }:
             <p className="font-mono text-[7px] text-cream/30 uppercase tracking-wider mt-0.5">{stat.sub}</p>
           </div>
         ))}
+      </div>
+
+      {/* Daily footprint quick-glance strip */}
+      <div className="liquid-glass border border-white/5 rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col">
+          <span className="font-mono text-[8px] text-cream/40 uppercase tracking-widest">Today's Footprint</span>
+          <span className={`font-grotesk text-2xl font-bold ${dailyKg <= goalKgDay ? 'text-neon' : 'text-orange-400'}`}>
+            {dailyKg.toFixed(1)} <span className="text-sm font-mono font-normal text-cream/50">kg CO₂</span>
+          </span>
+        </div>
+        <div className="flex flex-col items-end">
+          <span className="font-mono text-[8px] text-cream/40 uppercase tracking-widest">Daily Goal</span>
+          <span className="font-grotesk text-lg text-cream/70">{goalKgDay.toFixed(1)} kg</span>
+        </div>
+        <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-700 ${dailyKg <= goalKgDay ? 'bg-neon' : 'bg-orange-400'}`}
+            style={{ width: `${Math.min(100, (dailyKg / goalKgDay) * 100).toFixed(1)}%` }}
+          />
+        </div>
+        <p className="font-mono text-[8px] text-cream/30 uppercase tracking-wider w-full">
+          {dailyKg <= goalKgDay
+            ? `✓ ${(goalKgDay - dailyKg).toFixed(1)} kg under goal`
+            : `⚠ ${(dailyKg - goalKgDay).toFixed(1)} kg over goal`}
+        </p>
       </div>
 
       {/* CO₂ Ring Chart + Breakdown */}
@@ -349,24 +413,25 @@ export default function UserDashboard({ categories, trackerValues, onOpenAuth }:
 
         {/* Category Breakdown */}
         <div className="liquid-glass border border-white/5 rounded-2xl p-5 flex flex-col gap-3">
-          <span className="font-mono text-[9px] text-neon uppercase tracking-widest">Tracker Breakdown</span>
+          <span className="font-mono text-[9px] text-neon uppercase tracking-widest">Annual Tracker Breakdown</span>
           <div className="flex flex-col gap-2.5 overflow-y-auto max-h-48 no-scrollbar">
             {categories.map(cat => {
-              const val = trackerValues[cat.id];
-              const kg = cat.category !== 'Diet' && typeof val === 'number' ? val * cat.baseRate : null;
-              const barPct = kg !== null ? Math.min(100, (kg / (globalAvg / categories.length)) * 100) : null;
+              const kgYear = calcCategoryKgYear(cat, trackerValues);
+              const barPct = kgYear !== null ? Math.min(100, (kgYear / (globalAvg / Math.max(categories.length, 1))) * 100) : null;
               return (
                 <div key={cat.id} className="flex flex-col gap-1">
                   <div className="flex justify-between items-center">
                     <span className="font-mono text-[9px] text-cream/60 truncate pr-2">{cat.title}</span>
                     <span className="font-mono text-[9px] text-cream/80 shrink-0">
-                      {kg !== null ? `${kg.toFixed(0)} kg` : typeof val === 'string' ? val : '—'}
+                      {kgYear !== null ? `${(kgYear / 1000).toFixed(2)}t / yr` : '—'}
                     </span>
                   </div>
                   {barPct !== null && (
-                    <div className="h-1 rounded-full bg-white/5 overflow-hidden">
+                    <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-neon/60 transition-all duration-700"
+                        className={`h-full rounded-full transition-all duration-700 ${
+                          barPct > 80 ? 'bg-orange-400' : barPct > 50 ? 'bg-yellow-400' : 'bg-neon/70'
+                        }`}
                         style={{ width: `${barPct}%` }}
                       />
                     </div>
@@ -375,6 +440,9 @@ export default function UserDashboard({ categories, trackerValues, onOpenAuth }:
               );
             })}
           </div>
+          <p className="font-mono text-[8px] text-cream/25 uppercase tracking-wider border-t border-white/5 pt-2">
+            Includes all sources: transport · diet · energy · custom
+          </p>
         </div>
       </div>
 

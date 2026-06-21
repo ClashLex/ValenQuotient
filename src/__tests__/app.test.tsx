@@ -8,6 +8,7 @@ import { Sidebar } from '../components/Sidebar';
 import AdvisoryModal from '../components/AdvisoryModal';
 import CollectionSection from '../components/CollectionSection';
 import { DEFAULT_CATEGORIES } from '../constants/emissions';
+import { AuthProvider } from '../context/AuthContext';
 
 // Mock Firebase modules so tests don't fail without credentials
 vi.mock('../firebase', () => ({
@@ -128,7 +129,11 @@ describe('App & Remaining Components Coverage', () => {
     it('renders correctly and allows changing active section', () => {
       const setActiveSection = vi.fn();
       const onOpenAuth = vi.fn();
-      render(<Sidebar activeSection="home" setActiveSection={setActiveSection} onOpenAuth={onOpenAuth} />);
+      render(
+        <AuthProvider>
+          <Sidebar activeSection="home" setActiveSection={setActiveSection} onOpenAuth={onOpenAuth} />
+        </AuthProvider>
+      );
       const btn = screen.getByLabelText('Gap Matrix');
       fireEvent.click(btn);
       expect(setActiveSection).toHaveBeenCalledWith('analysis');

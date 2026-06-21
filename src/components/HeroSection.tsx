@@ -1,10 +1,37 @@
-import { Github, Award, Compass, BarChart3 } from 'lucide-react';
+import { useMemo } from 'react';
+import { Github, Award, Compass, BarChart3, Zap, Car, Leaf, Activity } from 'lucide-react';
+import { CarbonCategory } from '../types';
+import { calcDailyKg } from '../hooks/useFootprintHistory';
+import { DIET_EMISSION_SCORES } from '../constants/emissions';
 
 interface HeroSectionProps {
   setActiveSection: (sec: string) => void;
+  categories: CarbonCategory[];
+  trackerValues: Record<string, string | number>;
 }
 
-export default function HeroSection({ setActiveSection }: HeroSectionProps) {
+const GLOBAL_DAILY_KG = 4700 / 365; // ≈ 12.88 kg/day global average
+
+/** Per-category daily kg for the mini breakdown bars */
+function getCategoryDailyKg(cat: CarbonCategory, values: Record<string, string | number>): number {
+  const val = values[cat.id];
+  if (cat.category === 'Transport') return (Number(val) || 0) * cat.baseRate;
+  if (cat.category === 'Diet') {
+    const sel = (val || 'vegetarian') as keyof typeof DIET_EMISSION_SCORES;
+    return DIET_EMISSION_SCORES[sel];
+  }
+  if (cat.category === 'Energy') return ((Number(val) || 0) / 30) * cat.baseRate;
+  return (Number(val) || 0) * cat.baseRate;
+}
+
+const CATEGORY_META: Record<string, { icon: React.ElementType; color: string }> = {
+  Transport: { icon: Car,      color: 'text-blue-400' },
+  Diet:      { icon: Leaf,     color: 'text-emerald-400' },
+  Energy:    { icon: Zap,      color: 'text-yellow-400' },
+  Other:     { icon: Activity, color: 'text-[#b724ff]' },
+};
+
+export default function HeroSection({ setActiveSection, categories, trackerValues }: HeroSectionProps) {
   const socials = [
     { name: 'Github', icon: Github, href: 'https://github.com/ClashLex/ValenQuotient.git', label: 'ValenQuotient repository' },
   ];
@@ -26,6 +53,25 @@ export default function HeroSection({ setActiveSection }: HeroSectionProps) {
       sub: 'AI REDUCTIONS MODULE'
     }
   ];
+
+  // Live daily carbon total
+  const dailyKg = useMemo(
+    () => calcDailyKg(categories, trackerValues),
+    [categories, trackerValues],
+  );
+  const annualTonnes = (dailyKg * 365) / 1000;
+  const vsAvgPct = ((dailyKg / GLOBAL_DAILY_KG) * 100).toFixed(0);
+  const belowAvg = dailyKg < GLOBAL_DAILY_KG;
+
+  // Per-category breakdown for mini-bars
+  const breakdown = useMemo(
+    () => categories.map(cat => ({
+      cat,
+      kg: getCategoryDailyKg(cat, trackerValues),
+    })),
+    [categories, trackerValues],
+  );
+  const maxKg = Math.max(...breakdown.map(b => b.kg), 1);
 
   return (
     <section id="home" className="relative w-full overflow-hidden rounded-2xl flex flex-col bg-[#010828]/40 select-none border border-white/5 p-4 sm:p-6 md:p-8">
@@ -74,6 +120,103 @@ export default function HeroSection({ setActiveSection }: HeroSectionProps) {
             ))}
           </div>
         </div>
+
+        {/* ─── LIVE CARBON FOOTPRINT SUMMARY CARD ──────────────────────────── */}
+        <div className="w-full liquid-glass border border-white/8 rounded-2xl overflow-hidden">
+          {/* Header bar */}
+          <div className="flex items-center justify-between px-4 py-2.5 bg-[#00041a]/80 border-b border-white/5">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-neon animate-pulse shadow-[0_0_6px_#6FFF00]" />
+              <span className="font-mono text-[9px] text-neon uppercase tracking-widest">Live Carbon Footprint</span>
+            </div>
+            <span className="font-mono text-[7px] text-cream/30 uppercase tracking-widest">Updated in real-time</span>
+          </div>
+
+          <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Left: Big number + vs-average */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-end gap-2 flex-wrap">
+                <span className={`font-grotesk text-4xl sm:text-5xl font-bold leading-none ${belowAvg ? 'text-neon' : 'text-orange-400'}`}>
+                  {dailyKg.toFixed(1)}
+                </span>
+                <div className="flex flex-col pb-1">
+                  <span className="font-mono text-[9px] text-cream/50 uppercase">kg CO₂</span>
+                  <span className="font-mono text-[9px] text-cream/50 uppercase">per day</span>
+                </div>
+              </div>
+
+              {/* Gauge bar */}
+              <div className="space-y-1">
+                <div className="flex justify-between font-mono text-[8px] text-cream/40 uppercase">
+                  <span>0 kg</span>
+                  <span>Global avg: {GLOBAL_DAILY_KG.toFixed(1)} kg</span>
+                </div>
+                <div className="h-2.5 bg-white/5 rounded-full overflow-hidden relative">
+                  {/* Global average marker */}
+                  <div
+                    className="absolute top-0 bottom-0 w-px bg-white/20 z-10"
+                    style={{ left: '100%' }}
+                  />
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${belowAvg ? 'bg-neon' : 'bg-orange-400'}`}
+                    style={{ width: `${Math.min(150, (dailyKg / GLOBAL_DAILY_KG) * 100).toFixed(1)}%` }}
+                  />
+                </div>
+                <div className={`font-mono text-[9px] uppercase font-bold ${belowAvg ? 'text-neon' : 'text-orange-400'}`}>
+                  {belowAvg
+                    ? `✓ ${(GLOBAL_DAILY_KG - dailyKg).toFixed(1)} kg below global average (${vsAvgPct}%)`
+                    : `⚠ ${(dailyKg - GLOBAL_DAILY_KG).toFixed(1)} kg above global average (${vsAvgPct}%)`}
+                </div>
+              </div>
+
+              {/* Annual projection */}
+              <div className="flex gap-3 flex-wrap">
+                <div className="flex flex-col bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2">
+                  <span className="font-mono text-[7px] text-cream/40 uppercase">Annual projection</span>
+                  <span className={`font-grotesk text-lg font-bold ${belowAvg ? 'text-neon' : 'text-orange-400'}`}>
+                    {annualTonnes.toFixed(2)}t
+                  </span>
+                </div>
+                <div className="flex flex-col bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2">
+                  <span className="font-mono text-[7px] text-cream/40 uppercase">Trackers active</span>
+                  <span className="font-grotesk text-lg font-bold text-cream">{categories.length}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Category mini-bar breakdown */}
+            <div className="flex flex-col gap-2.5 justify-center">
+              <span className="font-mono text-[8px] text-cream/40 uppercase tracking-widest">Breakdown by source</span>
+              {breakdown.map(({ cat, kg }) => {
+                const meta = CATEGORY_META[cat.category] ?? CATEGORY_META.Other;
+                const Icon = meta.icon;
+                const barPct = (kg / maxKg) * 100;
+                return (
+                  <div key={cat.id} className="flex items-center gap-2 min-w-0">
+                    <Icon size={10} className={`${meta.color} shrink-0`} />
+                    <span className="font-mono text-[8px] text-cream/50 uppercase w-16 shrink-0 truncate">
+                      {cat.category === 'Transport' ? 'Commute' : cat.category === 'Diet' ? 'Diet' : cat.category === 'Energy' ? 'Energy' : cat.title.slice(0, 7)}
+                    </span>
+                    <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ${meta.color.replace('text-', 'bg-')}`}
+                        style={{ width: `${barPct.toFixed(1)}%` }}
+                      />
+                    </div>
+                    <span className={`font-mono text-[9px] shrink-0 font-bold ${meta.color}`}>{kg.toFixed(1)}</span>
+                  </div>
+                );
+              })}
+              <button
+                onClick={() => setActiveSection('trackers')}
+                className="mt-1 text-left font-mono text-[8px] text-neon uppercase tracking-wider hover:underline cursor-pointer"
+              >
+                → Adjust trackers
+              </button>
+            </div>
+          </div>
+        </div>
+        {/* ─── END LIVE CARD ────────────────────────────────────────────────── */}
 
         {/* Highlights cards */}
         <div className="w-full grid grid-cols-3 gap-2 sm:gap-4">
