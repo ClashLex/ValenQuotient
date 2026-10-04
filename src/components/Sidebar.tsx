@@ -56,7 +56,7 @@ export const Sidebar = React.memo(function Sidebar({
   })();
 
   return (
-    <aside className="hidden md:flex flex-col w-[72px] lg:w-[84px] h-full bg-[#00041d] border-r border-white/5 py-5 justify-between items-center shrink-0 z-30 relative shadow-2xl">
+    <aside className="hidden md:flex flex-col w-[76px] lg:w-[88px] h-full bg-[#00041d]/80 backdrop-blur-xl border-r border-white/8 py-5 justify-between items-center shrink-0 z-30 relative shadow-[0_0_40px_rgba(0,0,0,0.4)]">
       {/* Top App Avatar / Logo Badge */}
       <div className="flex flex-col items-center gap-1.5 focus:outline-none" aria-hidden="true">
         <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-neon to-emerald-500 p-0.5 flex items-center justify-center shadow-lg shadow-neon/10 hover:scale-105 transition-transform duration-300">
@@ -76,10 +76,10 @@ export const Sidebar = React.memo(function Sidebar({
             <button
               key={tab.id}
               onClick={() => setActiveSection(tab.id)}
-              className={`w-full aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 transition-all duration-300 cursor-pointer relative group ${
+              className={`w-full aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 transition-all duration-300 cursor-pointer relative group hover:-translate-y-0.5 ${
                 isActive
-                  ? 'bg-neon/10 border border-neon/30 text-neon shadow-[0_0_12px_rgba(111,255,0,0.15)]'
-                  : 'text-[#9cb4e5]/70 hover:bg-white/5 hover:text-cream border border-transparent'
+                  ? 'bg-gradient-to-b from-neon/20 to-neon/5 border border-neon/30 text-neon shadow-[0_0_16px_rgba(111,255,0,0.18)]'
+                  : 'text-[#9cb4e5]/70 hover:bg-white/5 hover:text-cream border border-transparent hover:border-white/10'
               }`}
               title={tab.label}
               aria-label={tab.label}
@@ -96,7 +96,7 @@ export const Sidebar = React.memo(function Sidebar({
               </span>
 
               {/* Cyber Hover Tooltip */}
-              <span className="absolute left-[80px] bg-[#00041d] border border-white/10 text-neon font-mono text-[8px] uppercase tracking-widest px-2.5 py-1 rounded shadow-xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-40">
+              <span className="absolute left-[84px] bg-[#00041d]/90 backdrop-blur-md border border-white/10 text-neon font-mono text-[8px] uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-xl pointer-events-none opacity-0 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 whitespace-nowrap z-40">
                 {tab.label}
               </span>
             </button>

@@ -115,7 +115,7 @@ export default function AboutSection({ setActiveSection }: AboutSectionProps) {
             {gaps.map((gap, index) => (
               <div
                 key={gap.id}
-                className="liquid-glass rounded-2xl p-5 border border-white/5 flex flex-col justify-between hover:border-white/10 transition-all duration-300 relative group"
+                className="liquid-glass card-interactive rounded-2xl p-5 border border-white/5 flex flex-col justify-between hover:border-neon/20 relative group"
               >
                 {/* Visual marker */}
                 <div className="absolute top-4 right-4 flex items-center justify-center w-7 h-7 rounded-full bg-white/[0.02] border border-white/5 group-hover:border-neon/30 group-hover:text-neon transition-all">

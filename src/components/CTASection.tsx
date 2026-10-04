@@ -114,7 +114,10 @@ export default function CTASection() {
 
             <div className="space-y-2">
               {faqs.map((faq, idx) => (
-                <div key={idx} className="border-b border-white/5 pb-2 last:border-0">
+                <div
+                  key={idx}
+                  className={`rounded-xl px-2 transition-colors duration-200 ${activeFaq === idx ? 'bg-white/[0.03] ring-1 ring-neon/15' : ''} border-b border-white/5 pb-2 last:border-0`}
+                >
                   <button
                     onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
                     className="w-full text-left font-grotesk text-xs sm:text-sm tracking-wide flex justify-between items-start gap-3 text-cream hover:text-neon transition-colors py-1.5 cursor-pointer"

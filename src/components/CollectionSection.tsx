@@ -227,10 +227,10 @@ export default function CollectionSection({
             <button
               key={tab.id}
               onClick={() => setActiveTabMode(tab.id)}
-              className={`px-2.5 py-1.5 rounded-lg text-left transition-all duration-300 whitespace-nowrap shrink-0 ${
+              className={`px-2.5 py-1.5 rounded-xl text-left transition-all duration-300 whitespace-nowrap shrink-0 hover:-translate-y-px ${
                 activeTabMode === tab.id
-                  ? 'bg-neon/15 text-neon border border-neon/30 shadow-[0_0_8px_rgba(111,255,0,0.1)]'
-                  : 'text-cream/50 hover:text-cream/80 border border-transparent'
+                  ? 'bg-neon/15 text-neon border border-neon/30 shadow-[0_0_12px_rgba(111,255,0,0.15)]'
+                  : 'text-cream/50 hover:text-cream/80 hover:bg-white/5 border border-transparent'
               }`}
               aria-selected={activeTabMode === tab.id}
               role="tab"

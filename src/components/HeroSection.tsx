@@ -263,7 +263,7 @@ export default function HeroSection({
           {highlights.map((item, idx) => (
             <div
               key={idx}
-              className="liquid-glass bg-white/[0.01] border border-white/5 p-3 sm:p-4 rounded-xl flex flex-col justify-between hover:bg-white/[0.03] hover:border-white/15 transition-all duration-300 min-w-0"
+              className="liquid-glass card-interactive bg-white/[0.01] border border-white/5 p-3 sm:p-4 rounded-2xl flex flex-col justify-between hover:border-neon/20 min-w-0"
             >
               <div className="flex justify-between items-center mb-2">
                 <span className="font-mono text-[7px] sm:text-[8px] text-[#9cb4e5]/60 tracking-wider font-bold leading-tight truncate pr-1">
@@ -337,7 +337,7 @@ export default function HeroSection({
           </div>
           <button
             onClick={() => setActiveSection('trackers')}
-            className="shrink-0 w-full sm:w-auto px-5 py-2.5 rounded-full font-grotesk text-[11px] text-[#010828] bg-cream hover:bg-neon transition-all duration-300 tracking-widest uppercase cursor-pointer"
+            className="shrink-0 w-full sm:w-auto px-6 py-2.5 rounded-full font-grotesk text-[11px] text-[#010828] bg-gradient-to-b from-cream to-white/80 hover:to-neon hover:shadow-[0_0_20px_rgba(111,255,0,0.35)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 tracking-widest uppercase cursor-pointer font-bold"
           >
             ACTIVATE TRACKER
           </button>

@@ -118,7 +118,7 @@ function AppInner() {
       {/* 2. MAIN CONTENT */}
       <div className="flex-grow flex flex-col h-full overflow-hidden relative min-w-0">
         {/* Top Header */}
-        <header className="h-12 sm:h-14 border-b border-white/5 backdrop-blur-md bg-[#00041d]/85 flex items-center justify-between px-3 sm:px-5 shrink-0 z-20">
+        <header className="h-12 sm:h-14 border-b border-white/8 backdrop-blur-xl bg-[#00041d]/70 supports-[backdrop-filter]:bg-[#00041d]/60 flex items-center justify-between px-3 sm:px-5 shrink-0 z-20 shadow-[0_1px_20px_rgba(0,0,0,0.35)]">
           <div className="flex items-center gap-2">
             <h1 className="font-grotesk text-sm sm:text-base tracking-widest uppercase text-cream font-bold leading-none">
               VALENQUOTIENT
@@ -185,7 +185,7 @@ function AppInner() {
           role="main"
         >
           <div
-            className={`flex-grow rounded-xl border border-white/5 bg-[#010828]/40 flex flex-col min-h-0 ${
+            className={`flex-grow rounded-2xl border border-white/8 bg-[#010828]/50 shadow-[0_8px_40px_rgba(0,0,0,0.35)] ring-1 ring-white/5 backdrop-blur-sm flex flex-col min-h-0 ${
               activeSection === 'trackers' ? 'overflow-hidden' : 'overflow-y-auto'
             }`}
           >
@@ -249,8 +249,8 @@ function AppInner() {
         {/* 3. MOBILE BOTTOM NAV */}
         <nav
           aria-label="Mobile Navigation"
-          className="md:hidden border-t border-white/5 bg-[#00051e]/95 backdrop-blur-md flex justify-around items-stretch shrink-0 z-30 pb-safe"
-          style={{ minHeight: '56px' }}
+          className="md:hidden border-t border-white/8 bg-[#00051e]/80 backdrop-blur-xl flex justify-around items-stretch shrink-0 z-30 pb-safe px-2 gap-1"
+          style={{ minHeight: '60px' }}
         >
           {tabs.map((tab) => {
             const isActive = activeSection === tab.id;
@@ -258,16 +258,18 @@ function AppInner() {
               <button
                 key={tab.id}
                 onClick={() => setActiveSection(tab.id)}
-                className={`flex-1 py-2 flex flex-col items-center justify-center gap-0.5 transition-all duration-300 cursor-pointer min-w-0 ${
-                  isActive ? 'text-neon' : 'text-[#9cb4e5]/60 hover:text-cream'
+                className={`flex-1 py-2 px-1 flex flex-col items-center justify-center gap-0.5 transition-all duration-300 cursor-pointer min-w-0 rounded-xl my-1 ${
+                  isActive
+                    ? 'text-neon bg-neon/10 ring-1 ring-neon/25 shadow-[0_0_16px_rgba(111,255,0,0.12)]'
+                    : 'text-[#9cb4e5]/60 hover:text-cream hover:bg-white/5'
                 }`}
                 aria-label={`Switch to ${tab.label}`}
               >
-                <tab.icon size={20} className={isActive ? 'scale-110 stroke-[2.5px]' : ''} />
-                <span className="font-mono text-[8px] uppercase tracking-wide leading-none truncate max-w-full px-1">
+                <tab.icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'scale-110' : ''} />
+                <span className="font-mono text-[8px] uppercase tracking-wider leading-none truncate max-w-full px-1 font-semibold">
                   {tab.label.split(' ')[0]}
                 </span>
-                {isActive && <span className="w-1 h-1 rounded-full bg-neon mt-0.5" />}
+                {isActive && <span className="w-4 h-0.5 rounded-full bg-neon mt-1 shadow-[0_0_6px_#6FFF00]" />}
               </button>
             );
           })}
