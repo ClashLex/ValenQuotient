@@ -1,6 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { CarbonCategory } from '../types';
-import { DIET_EMISSION_SCORES } from '../constants/emissions';
+import { calcDailyKg, calcBreakdown } from '../constants/emissions';
+import { STORAGE_KEYS } from '../constants/keys';
+
+// Re-exported so existing imports keep working while the math lives in one place.
+export { calcDailyKg } from '../constants/emissions';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -13,19 +17,33 @@ export interface DailyLog {
   breakdown: Record<string, number>;
 }
 
+/** Max number of daily snapshots retained in localStorage. */
+const MAX_HISTORY_DAYS = 90;
+/** How many days of history the trend chart displays. */
+const WEEK_WINDOW_DAYS = 7;
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Returns today's date as YYYY-MM-DD in local time */
-function todayKey(): string {
-  const d = new Date();
+/** Formats a Date as a local-time YYYY-MM-DD key. */
+function dateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-const STORAGE_KEY = 'vq_footprint_history';
+/** Returns today's date as YYYY-MM-DD in local time */
+function todayKey(): string {
+  return dateKey(new Date());
+}
+
+/** Returns the YYYY-MM-DD key for `offset` days before today (0 = today). */
+function keyDaysAgo(offset: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - offset);
+  return dateKey(d);
+}
 
 function loadHistory(): DailyLog[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEYS.HISTORY);
     return raw ? (JSON.parse(raw) as DailyLog[]) : [];
   } catch {
     return [];
@@ -34,89 +52,40 @@ function loadHistory(): DailyLog[] {
 
 function saveHistory(logs: DailyLog[]): void {
   try {
-    // Keep at most 90 days
-    const trimmed = logs.slice(-90);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(logs.slice(-MAX_HISTORY_DAYS)));
   } catch {
     // Quota exceeded — silently ignore
   }
 }
 
-/** Calculate total kg CO₂/day from categories + values */
-export function calcDailyKg(
-  categories: CarbonCategory[],
-  values: Record<string, string | number>,
-): number {
-  return categories.reduce((sum, cat) => {
-    const val = values[cat.id];
-    if (cat.category === 'Transport') {
-      return sum + (Number(val) || 0) * cat.baseRate;
-    }
-    if (cat.category === 'Diet') {
-      const selection = (val || 'vegetarian') as keyof typeof DIET_EMISSION_SCORES;
-      return sum + DIET_EMISSION_SCORES[selection];
-    }
-    if (cat.category === 'Energy') {
-      return sum + ((Number(val) || 0) / 30) * cat.baseRate;
-    }
-    // Custom / Other
-    return sum + (Number(val) || 0) * cat.baseRate;
-  }, 0);
-}
-
-/** Get per-category kg breakdown */
-function calcBreakdown(
-  categories: CarbonCategory[],
-  values: Record<string, string | number>,
-): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const cat of categories) {
-    const val = values[cat.id];
-    if (cat.category === 'Transport') {
-      out[cat.id] = (Number(val) || 0) * cat.baseRate;
-    } else if (cat.category === 'Diet') {
-      const selection = (val || 'vegetarian') as keyof typeof DIET_EMISSION_SCORES;
-      out[cat.id] = DIET_EMISSION_SCORES[selection];
-    } else if (cat.category === 'Energy') {
-      out[cat.id] = ((Number(val) || 0) / 30) * cat.baseRate;
-    } else {
-      out[cat.id] = (Number(val) || 0) * cat.baseRate;
-    }
-  }
-  return out;
-}
-
 /**
- * Compute current streak: consecutive days (going backwards from today)
+ * Compute current streak: consecutive days (walking backwards from today)
  * where totalKg <= goalKg.
+ *
+ * Today is skipped when it has not been logged yet, so an in-progress day
+ * never breaks an otherwise intact streak.
  */
 function computeStreak(logs: DailyLog[], goalKg: number): number {
   if (!logs.length || goalKg <= 0) return 0;
+
+  const byDate = new Map(logs.map((l) => [l.date, l]));
   const today = todayKey();
   let streak = 0;
-  const checkDate = new Date();
 
-  for (let i = 0; i < 365; i++) {
-    const key = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
-    // If it's today and not yet logged, skip (don't break streak for today)
-    if (key === today) {
-      const log = logs.find((l) => l.date === key);
-      if (!log) {
-        checkDate.setDate(checkDate.getDate() - 1);
-        continue;
-      }
-      if (log.totalKg <= goalKg) {
-        streak++;
-        checkDate.setDate(checkDate.getDate() - 1);
-        continue;
-      }
+  for (let offset = 0; offset < MAX_HISTORY_DAYS; offset++) {
+    const key = keyDaysAgo(offset);
+    const log = byDate.get(key);
+
+    if (!log) {
+      // Today isn't logged yet — look further back instead of breaking.
+      if (key === today) continue;
       break;
     }
-    const log = logs.find((l) => l.date === key);
-    if (!log || log.totalKg > goalKg) break;
+
+    if (log.totalKg > goalKg) break;
     streak++;
-    checkDate.setDate(checkDate.getDate() - 1);
   }
+
   return streak;
 }
 
@@ -142,41 +111,46 @@ export function useFootprintHistory(
 ): UseFootprintHistoryResult {
   const [history, setHistory] = useState<DailyLog[]>(loadHistory);
 
-  // Auto-record today's snapshot whenever tracker values change (idempotent per day)
+  // Snapshot today's totals. Idempotent: replaces any existing entry for today.
   const recordToday = useCallback(() => {
     const key = todayKey();
-    const totalKg = calcDailyKg(categories, trackerValues);
-    const breakdown = calcBreakdown(categories, trackerValues);
-    const newLog: DailyLog = { date: key, totalKg, breakdown };
+    const newLog: DailyLog = {
+      date: key,
+      totalKg: calcDailyKg(categories, trackerValues),
+      breakdown: calcBreakdown(categories, trackerValues),
+    };
 
     setHistory((prev) => {
-      // Remove existing entry for today (update in place)
-      const filtered = prev.filter((l) => l.date !== key);
-      const updated = [...filtered, newLog].sort((a, b) => a.date.localeCompare(b.date));
+      const updated = [...prev.filter((l) => l.date !== key), newLog].sort((a, b) =>
+        a.date.localeCompare(b.date),
+      );
       saveHistory(updated);
       return updated;
     });
   }, [categories, trackerValues]);
 
-  // Record today whenever values change
+  // Skip the initial mount so we never log a day the user hasn't actually
+  // entered data for (defaults are placeholders, not real readings).
+  const hasRecorded = useRef(false);
   useEffect(() => {
+    if (!hasRecorded.current) {
+      hasRecorded.current = true;
+      return;
+    }
     recordToday();
   }, [recordToday]);
 
-  // Build the 7-slot week array (oldest → today)
-  const weekHistory: (DailyLog | null)[] = (() => {
-    const slots: (DailyLog | null)[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      slots.push(history.find((l) => l.date === key) ?? null);
-    }
-    return slots;
-  })();
+  // 7-slot trend window, oldest → today, gaps filled with null.
+  const weekHistory = useMemo<(DailyLog | null)[]>(() => {
+    const byDate = new Map(history.map((l) => [l.date, l]));
+    return Array.from({ length: WEEK_WINDOW_DAYS }, (_, i) => {
+      const offset = WEEK_WINDOW_DAYS - 1 - i;
+      return byDate.get(keyDaysAgo(offset)) ?? null;
+    });
+  }, [history]);
 
-  const todayLog = history.find((l) => l.date === todayKey()) ?? null;
-  const streak = computeStreak(history, goalKg);
+  const todayLog = useMemo(() => history.find((l) => l.date === todayKey()) ?? null, [history]);
+  const streak = useMemo(() => computeStreak(history, goalKg), [history, goalKg]);
 
   return { history, weekHistory, streak, todayLog, recordToday };
 }

@@ -1,11 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, ShieldCheck, RotateCcw, Check, Sparkles, Footprints } from 'lucide-react';
 import { CarbonCategory } from '../types';
-import {
-  TRANSPORT_BASE_RATE,
-  DIET_EMISSION_SCORES,
-  ENERGY_BASE_RATE,
-} from '../constants/emissions';
+import { kgPerDayForCategory, DAYS_PER_YEAR } from '../constants/emissions';
 
 interface AdvisoryModalProps {
   categoryItem: CarbonCategory | null;
@@ -113,21 +109,7 @@ export default function AdvisoryModal({
    * @returns {string} Structured numeric text representing kg CO2 per day.
    */
   const calculateResult = (): string => {
-    if (categoryItem.category === 'Transport') {
-      const commuteMiles = Number(selectedValue) || 0;
-      return (commuteMiles * TRANSPORT_BASE_RATE).toFixed(1);
-    }
-    if (categoryItem.category === 'Diet') {
-      const selection = (selectedValue || 'vegetarian') as 'vegan' | 'vegetarian' | 'meat';
-      return DIET_EMISSION_SCORES[selection].toFixed(1);
-    }
-    if (categoryItem.category === 'Energy') {
-      const energyKwh = Number(selectedValue) || 0;
-      return ((energyKwh / 30) * ENERGY_BASE_RATE).toFixed(1);
-    }
-    // Custom category calculations
-    const val = Number(selectedValue) || 0;
-    return (val * categoryItem.baseRate).toFixed(1);
+    return kgPerDayForCategory(categoryItem, selectedValue).toFixed(1);
   };
 
   /**
@@ -272,8 +254,14 @@ export default function AdvisoryModal({
 
     // Default custom category tips
     const baseVal = Number(selectedValue) || 0;
-    const reducedVal = (baseVal * 0.8).toFixed(1);
-    const co2SavedAnnually = (baseVal * categoryItem.baseRate * 0.2 * 365).toFixed(0);
+    const REDUCTION_RATIO = 0.2; // recommended 20% cut
+    const reducedVal = (baseVal * (1 - REDUCTION_RATIO)).toFixed(1);
+    const co2SavedAnnually = (
+      baseVal *
+      categoryItem.baseRate *
+      REDUCTION_RATIO *
+      DAYS_PER_YEAR
+    ).toFixed(0);
     return [
       {
         title: 'EFFICIENCY TARGET',
@@ -332,13 +320,15 @@ export default function AdvisoryModal({
 
         {/* Left Side: Image Panel */}
         <div className="w-full lg:w-5/12 relative bg-black/50 h-40 sm:h-48 lg:h-auto shrink-0">
-          <img
-            src={categoryItem.videoUrl}
-            alt={`Visual background representation of ${categoryItem.title}`}
-            referrerPolicy="no-referrer"
-            loading="lazy"
-            className="w-full h-full object-cover opacity-60 grayscale brightness-75 filter contrast-[1.05]"
-          />
+          {categoryItem.videoUrl && (
+            <img
+              src={categoryItem.videoUrl}
+              alt={`Visual background representation of ${categoryItem.title}`}
+              referrerPolicy="no-referrer"
+              loading="lazy"
+              className="w-full h-full object-cover opacity-60 grayscale brightness-75 filter contrast-[1.05]"
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-transparent via-[#010828]/10 to-[#010828] pointer-events-none" />
 
           {/* Emission overlay */}

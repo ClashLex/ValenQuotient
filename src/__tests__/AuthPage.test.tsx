@@ -1,14 +1,14 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import AuthPage from '../components/AuthPage';
 import { AuthContext } from '../context/AuthContext';
+import { createAuthContextValue } from './testUtils';
 
 describe('AuthPage', () => {
   it('renders auth modal correctly', () => {
-    const mockOnClose = vi.fn();
     render(
-      <AuthContext.Provider value={{ user: null, signInWithGoogle: vi.fn(), signOut: vi.fn(), loading: false }}>
-        <AuthPage onClose={mockOnClose} />
+      <AuthContext.Provider value={createAuthContextValue()}>
+        <AuthPage onClose={vi.fn()} />
       </AuthContext.Provider>
     );
 
@@ -18,26 +18,31 @@ describe('AuthPage', () => {
   it('calls onClose when close button is clicked', () => {
     const mockOnClose = vi.fn();
     render(
-      <AuthContext.Provider value={{ user: null, signInWithGoogle: vi.fn(), signOut: vi.fn(), loading: false }}>
+      <AuthContext.Provider value={createAuthContextValue()}>
         <AuthPage onClose={mockOnClose} />
       </AuthContext.Provider>
     );
 
-    const closeButton = screen.getByLabelText('Close');
-    fireEvent.click(closeButton);
+    fireEvent.click(screen.getByLabelText('Close'));
     expect(mockOnClose).toHaveBeenCalled();
   });
 
-  it('calls signInWithGoogle when button is clicked', () => {
-    const mockSignIn = vi.fn();
+  it('calls signInWithGoogle when button is clicked', async () => {
+    const mockSignIn = vi.fn().mockResolvedValue(undefined);
     render(
-      <AuthContext.Provider value={{ user: null, signInWithGoogle: mockSignIn, signOut: vi.fn(), loading: false }}>
+      <AuthContext.Provider
+        value={{ ...createAuthContextValue(), signInWithGoogle: mockSignIn }}
+      >
         <AuthPage onClose={vi.fn()} />
       </AuthContext.Provider>
     );
 
-    const signInButton = screen.getByText(/Continue with Google/i);
-    fireEvent.click(signInButton);
+    // Google sign-in is async and the modal flips its loading state on settle,
+    // so await the resulting render rather than asserting synchronously.
+    await act(async () => {
+      fireEvent.click(screen.getByText(/Continue with Google/i));
+    });
+
     expect(mockSignIn).toHaveBeenCalled();
   });
 });

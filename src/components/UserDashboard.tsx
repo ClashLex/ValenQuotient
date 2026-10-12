@@ -23,8 +23,14 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { db } from '../firebase';
 import { CarbonCategory } from '../types';
-import { useFootprintHistory, calcDailyKg } from '../hooks/useFootprintHistory';
-import { DIET_EMISSION_SCORES } from '../constants/emissions';
+import { useFootprintHistory } from '../hooks/useFootprintHistory';
+import {
+  calcAnnualKg,
+  kgPerYearForCategory,
+  GLOBAL_AVERAGE_KG_YEAR,
+  DEFAULT_GOAL_KG_DAY,
+} from '../constants/emissions';
+import { STORAGE_KEYS } from '../constants/keys';
 
 interface UserDashboardProps {
   categories: CarbonCategory[];
@@ -42,37 +48,6 @@ function getInitials(name: string | null, email: string | null): string {
   }
   return (email ?? 'EW').slice(0, 2).toUpperCase();
 }
-
-/** Calculate annualised total CO₂ (kg/year) from tracker values.
- *  Uses the same formula as CollectionSection / useFootprintHistory so all
- *  tabs are consistent.
- */
-function calcAnnualCO2(
-  categories: CarbonCategory[],
-  values: Record<string, string | number>,
-): number {
-  return calcDailyKg(categories, values) * 365;
-}
-
-/** For the tracker breakdown pane: per-category annual kg */
-function calcCategoryKgYear(
-  cat: CarbonCategory,
-  values: Record<string, string | number>,
-): number | null {
-  const val = values[cat.id];
-  if (cat.category === 'Transport') return (Number(val) || 0) * cat.baseRate * 365;
-  if (cat.category === 'Diet') {
-    const selection = (val || 'vegetarian') as keyof typeof DIET_EMISSION_SCORES;
-    return DIET_EMISSION_SCORES[selection] * 365;
-  }
-  if (cat.category === 'Energy') return ((Number(val) || 0) / 30) * cat.baseRate * 365;
-  if (typeof val === 'number') return val * cat.baseRate * 365;
-  return null;
-}
-
-const GLOBAL_AVERAGE_KG = 4700; // kg CO₂ per year global mean
-/** Default daily goal = global average ÷ 365, rounded to 1 decimal */
-const DEFAULT_GOAL_KG_DAY = Math.round((GLOBAL_AVERAGE_KG / 365) * 10) / 10; // ≈ 12.9 kg/day
 
 const BADGES = [
   { id: 'joined', icon: '🌱', label: 'Eco Pioneer', desc: 'Joined ValenQuotient', unlocked: true },
@@ -213,17 +188,17 @@ export default function UserDashboard({
 
   // Load persisted daily goal
   const [goalKgDay] = useState<number>(() => {
-    const saved = localStorage.getItem('vq_goal_kg_day');
-    return saved ? Number(saved) : DEFAULT_GOAL_KG_DAY;
+    const saved = Number(localStorage.getItem(STORAGE_KEYS.GOAL_KG_DAY));
+    return saved > 0 ? saved : DEFAULT_GOAL_KG_DAY;
   });
 
   const { streak, history } = useFootprintHistory(categories, trackerValues, goalKgDay);
 
   const initials = getInitials(user?.displayName ?? null, user?.email ?? null);
   // Annual CO₂ now includes all categories including diet
-  const totalCO2 = calcAnnualCO2(categories, trackerValues);
-  const dailyKg = calcDailyKg(categories, trackerValues);
-  const globalAvg = GLOBAL_AVERAGE_KG;
+  const totalCO2 = calcAnnualKg(categories, trackerValues);
+  const dailyKg = totalCO2 / 365;
+  const globalAvg = GLOBAL_AVERAGE_KG_YEAR;
   const pct = Math.min(100, Math.round((totalCO2 / globalAvg) * 100));
   const belowAverage = totalCO2 < globalAvg;
   const reduction = belowAverage ? Math.round(((globalAvg - totalCO2) / globalAvg) * 100) : 0;
@@ -531,7 +506,12 @@ export default function UserDashboard({
           </span>
           <div className="flex flex-col gap-2.5 overflow-y-auto max-h-48 no-scrollbar">
             {categories.map((cat) => {
-              const kgYear = calcCategoryKgYear(cat, trackerValues);
+              const rawValue = trackerValues[cat.id];
+              // Unset custom trackers have no reading to annualise — show a dash.
+              const kgYear =
+                rawValue === undefined && cat.category === 'Other'
+                  ? null
+                  : kgPerYearForCategory(cat, rawValue);
               const barPct =
                 kgYear !== null
                   ? Math.min(100, (kgYear / (globalAvg / Math.max(categories.length, 1))) * 100)

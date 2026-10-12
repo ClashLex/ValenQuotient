@@ -26,6 +26,102 @@ export const DIET_EMISSION_SCORES = {
  */
 export const ENERGY_BASE_RATE = 0.384;
 
+/** Days per billing cycle used to annualise monthly energy readings. */
+export const DAYS_PER_MONTH = 30;
+
+/** Days per year, used for annualised projections. */
+export const DAYS_PER_YEAR = 365;
+
+/**
+ * Global mean CO₂ footprint per capita in kg CO₂ / year.
+ * Used as the benchmark for goals, streaks and comparative scoring.
+ */
+export const GLOBAL_AVERAGE_KG_YEAR = 4700;
+
+/** Daily equivalent of the global average, in kg CO₂ / day (≈ 12.9). */
+export const GLOBAL_AVERAGE_KG_DAY = GLOBAL_AVERAGE_KG_YEAR / DAYS_PER_YEAR;
+
+/** Default daily carbon goal, rounded to 1 decimal (≈ 12.9 kg/day). */
+export const DEFAULT_GOAL_KG_DAY = Math.round(GLOBAL_AVERAGE_KG_DAY * 10) / 10;
+
+/**
+ * Resolve a diet tracker's stored value into a diet profile key.
+ * Defaults to 'vegetarian' so incomplete data never silently scores as vegan.
+ */
+export function toDietProfile(
+  value: string | number | null | undefined
+): keyof typeof DIET_EMISSION_SCORES {
+  const key = typeof value === 'string' ? value : 'vegetarian';
+  return key in DIET_EMISSION_SCORES ? (key as keyof typeof DIET_EMISSION_SCORES) : 'vegetarian';
+}
+
+/**
+ * Single source of truth for emissions math.
+ *
+ * Returns the daily kg CO₂ for one category + its tracked value. Every
+ * consumer (HeroSection, CollectionSection, AdvisoryModal, UserDashboard and
+ * the useFootprintHistory hook) must go through this so the numbers can never
+ * drift between views.
+ *
+ * - Transport: miles/day × TRANSPORT_BASE_RATE
+ * - Diet: fixed daily footprint for the selected profile
+ * - Energy: (kWh/month ÷ 30) × ENERGY_BASE_RATE
+ * - Other/custom: value × the category's own baseRate
+ */
+export function kgPerDayForCategory(
+  category: CarbonCategory,
+  value: string | number | null | undefined
+): number {
+  if (category.category === 'Diet') {
+    return DIET_EMISSION_SCORES[toDietProfile(value)];
+  }
+
+  const numeric = Number(value) || 0;
+
+  if (category.category === 'Energy') {
+    return (numeric / DAYS_PER_MONTH) * category.baseRate;
+  }
+
+  // Transport and Other/custom both scale linearly by the category base rate.
+  return numeric * category.baseRate;
+}
+
+/** Annualised kg CO₂ for one category + tracked value. */
+export function kgPerYearForCategory(
+  category: CarbonCategory,
+  value: string | number | null | undefined
+): number {
+  return kgPerDayForCategory(category, value) * DAYS_PER_YEAR;
+}
+
+/** Total daily kg CO₂ across every tracked category. */
+export function calcDailyKg(
+  categories: CarbonCategory[],
+  values: Record<string, string | number>
+): number {
+  return categories.reduce((sum, cat) => sum + kgPerDayForCategory(cat, values[cat.id]), 0);
+}
+
+/** Total annualised kg CO₂ across every tracked category. */
+export function calcAnnualKg(
+  categories: CarbonCategory[],
+  values: Record<string, string | number>
+): number {
+  return calcDailyKg(categories, values) * DAYS_PER_YEAR;
+}
+
+/** Per-category daily kg CO₂ breakdown, keyed by category id. */
+export function calcBreakdown(
+  categories: CarbonCategory[],
+  values: Record<string, string | number>
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const cat of categories) {
+    out[cat.id] = kgPerDayForCategory(cat, values[cat.id]);
+  }
+  return out;
+}
+
 /**
  * Default carbon tracking categories for application onboarding.
  */

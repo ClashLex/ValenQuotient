@@ -1,7 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronRight, Sparkles, Plus, Heart, MoreVertical, Trash2, Flame } from 'lucide-react';
 import { CarbonCategory } from '../types';
-import { DIET_EMISSION_SCORES } from '../constants/emissions';
+import {
+  calcDailyKg,
+  kgPerDayForCategory,
+  DEFAULT_GOAL_KG_DAY,
+} from '../constants/emissions';
+import { STORAGE_KEYS } from '../constants/keys';
+import { safeParse } from '../utils/storage';
 import { useFootprintHistory } from '../hooks/useFootprintHistory';
 
 interface CollectionSectionProps {
@@ -64,27 +70,24 @@ export default function CollectionSection({
     return categories[0]?.id || 'eco-01';
   });
   const [pledges, setPledges] = useState<string[]>(() => {
-    const saved = localStorage.getItem('vq_pledges');
-    return saved
-      ? JSON.parse(saved)
-      : [
-          'I PLEDGE TO WALK TO MY LOCAL MARKETPLACE INSTEAD OF DRIVING ON WEEKENDS.',
-          'SWAPPING ONE HAMBURGER PER WEEK WITH A ORGANIC LENTIL BOWL.',
-          'REDUCING MY HEATING TEMPERATURE BY 2 DEGREES THROUGHOUT WINTER.',
-        ];
+    const saved = safeParse<string[]>(localStorage.getItem(STORAGE_KEYS.PLEDGES));
+    return saved ?? [
+      'I PLEDGE TO WALK TO MY LOCAL MARKETPLACE INSTEAD OF DRIVING ON WEEKENDS.',
+      'SWAPPING ONE HAMBURGER PER WEEK WITH A ORGANIC LENTIL BOWL.',
+      'REDUCING MY HEATING TEMPERATURE BY 2 DEGREES THROUGHOUT WINTER.',
+    ];
   });
   const [newPledge, setNewPledge] = useState('');
   const [offsetTons, setOffsetTons] = useState(1);
   const [completedChallenges, setCompletedChallenges] = useState<string[]>(() => {
-    const saved = localStorage.getItem('vq_completed_challenges');
-    return saved ? JSON.parse(saved) : [];
+    return safeParse<string[]>(localStorage.getItem(STORAGE_KEYS.COMPLETED_CHALLENGES)) ?? [];
   });
   const [mobShowThread, setMobShowThread] = useState<boolean>(false);
 
   // Daily goal state (persisted)
   const [goalKgDay, setGoalKgDay] = useState<number>(() => {
-    const saved = localStorage.getItem('vq_goal_kg_day');
-    return saved ? Number(saved) : Math.round((4700 / 365) * 10) / 10; // ≈ 12.9 kg/day
+    const saved = Number(localStorage.getItem(STORAGE_KEYS.GOAL_KG_DAY));
+    return saved > 0 ? saved : DEFAULT_GOAL_KG_DAY;
   });
 
   // Daily history hook — records today automatically on each render with new values
@@ -99,15 +102,18 @@ export default function CollectionSection({
 
   // Persistence hooks
   useEffect(() => {
-    localStorage.setItem('vq_pledges', JSON.stringify(pledges));
+    localStorage.setItem(STORAGE_KEYS.PLEDGES, JSON.stringify(pledges));
   }, [pledges]);
 
   useEffect(() => {
-    localStorage.setItem('vq_completed_challenges', JSON.stringify(completedChallenges));
+    localStorage.setItem(
+      STORAGE_KEYS.COMPLETED_CHALLENGES,
+      JSON.stringify(completedChallenges),
+    );
   }, [completedChallenges]);
 
   useEffect(() => {
-    localStorage.setItem('vq_goal_kg_day', String(goalKgDay));
+    localStorage.setItem(STORAGE_KEYS.GOAL_KG_DAY, String(goalKgDay));
   }, [goalKgDay]);
 
   /**
@@ -115,19 +121,8 @@ export default function CollectionSection({
    * @param {CarbonCategory} category - The carbon category tracker configuration.
    * @returns {string} The formatted carbon emission value in kg.
    */
-  const getOutputCo2 = (category: CarbonCategory): string => {
-    const val = trackerValues[category.id];
-    if (category.category === 'Transport')
-      return ((Number(val) || 0) * category.baseRate).toFixed(1);
-    if (category.category === 'Diet') {
-      const selection = (val || 'vegetarian') as 'vegan' | 'vegetarian' | 'meat';
-      return DIET_EMISSION_SCORES[selection].toFixed(1);
-    }
-    if (category.category === 'Energy')
-      return (((Number(val) || 0) / 30) * category.baseRate).toFixed(1);
-    // Custom category calculations
-    return ((Number(val) || 0) * category.baseRate).toFixed(1);
-  };
+  const getOutputCo2 = (category: CarbonCategory): string =>
+    kgPerDayForCategory(category, trackerValues[category.id]).toFixed(1);
 
   /**
    * Formats the unit display label for a carbon category.
@@ -143,19 +138,10 @@ export default function CollectionSection({
   };
 
   // Memoize total daily carbon baseline computation
-  const baseTotalCo2 = useMemo(() => {
-    return categories.reduce((sum, cat) => {
-      const val = trackerValues[cat.id];
-      if (cat.category === 'Transport') return sum + (Number(val) || 0) * cat.baseRate;
-      if (cat.category === 'Diet') {
-        const selection = (val || 'vegetarian') as 'vegan' | 'vegetarian' | 'meat';
-        return sum + DIET_EMISSION_SCORES[selection];
-      }
-      if (cat.category === 'Energy') return sum + ((Number(val) || 0) / 30) * cat.baseRate;
-      // Custom category computation
-      return sum + (Number(val) || 0) * cat.baseRate;
-    }, 0);
-  }, [categories, trackerValues]);
+  const baseTotalCo2 = useMemo(() => calcDailyKg(categories, trackerValues), [
+    categories,
+    trackerValues,
+  ]);
 
   // Memoize daily active reductions
   const activeReduction = useMemo(() => {
@@ -295,13 +281,15 @@ export default function CollectionSection({
                       }`}
                     >
                       <div className="w-9 h-9 rounded-full border border-white/10 overflow-hidden relative shrink-0">
-                        <img
-                          src={cat.videoUrl}
-                          alt={`${cat.category} footprint icon`}
-                          loading="lazy"
-                          className="w-full h-full object-cover grayscale"
-                          referrerPolicy="no-referrer"
-                        />
+                        {cat.videoUrl && (
+                          <img
+                            src={cat.videoUrl}
+                            alt={`${cat.category} footprint icon`}
+                            loading="lazy"
+                            className="w-full h-full object-cover grayscale"
+                            referrerPolicy="no-referrer"
+                          />
+                        )}
                         <span className="w-2 h-2 absolute bottom-0 right-0 rounded-full bg-neon border-2 border-[#010828]" />
                       </div>
                       <div className="flex-grow overflow-hidden min-w-0 pr-6">
@@ -537,13 +525,15 @@ export default function CollectionSection({
                     <ChevronRight className="rotate-180" size={16} aria-hidden="true" />
                   </button>
                   <div className="w-7 h-7 rounded-full overflow-hidden border border-white/5 shrink-0">
-                    <img
-                      src={currentCategory.videoUrl}
-                      alt={currentCategory.title}
-                      loading="lazy"
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
+                    {currentCategory.videoUrl && (
+                      <img
+                        src={currentCategory.videoUrl}
+                        alt={currentCategory.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
                   </div>
                   <div className="min-w-0">
                     <span className="font-grotesk text-[11px] font-bold uppercase tracking-wide block truncate">

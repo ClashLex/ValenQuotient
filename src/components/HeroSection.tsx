@@ -1,27 +1,17 @@
 import { useMemo } from 'react';
 import { Github, Award, Compass, BarChart3, Zap, Car, Leaf, Activity } from 'lucide-react';
 import { CarbonCategory } from '../types';
-import { calcDailyKg } from '../hooks/useFootprintHistory';
-import { DIET_EMISSION_SCORES } from '../constants/emissions';
+import {
+  calcDailyKg,
+  kgPerDayForCategory,
+  DAYS_PER_YEAR,
+  GLOBAL_AVERAGE_KG_DAY,
+} from '../constants/emissions';
 
 interface HeroSectionProps {
   setActiveSection: (sec: string) => void;
   categories: CarbonCategory[];
   trackerValues: Record<string, string | number>;
-}
-
-const GLOBAL_DAILY_KG = 4700 / 365; // ≈ 12.88 kg/day global average
-
-/** Per-category daily kg for the mini breakdown bars */
-function getCategoryDailyKg(cat: CarbonCategory, values: Record<string, string | number>): number {
-  const val = values[cat.id];
-  if (cat.category === 'Transport') return (Number(val) || 0) * cat.baseRate;
-  if (cat.category === 'Diet') {
-    const sel = (val || 'vegetarian') as keyof typeof DIET_EMISSION_SCORES;
-    return DIET_EMISSION_SCORES[sel];
-  }
-  if (cat.category === 'Energy') return ((Number(val) || 0) / 30) * cat.baseRate;
-  return (Number(val) || 0) * cat.baseRate;
 }
 
 const CATEGORY_META: Record<string, { icon: React.ElementType; color: string }> = {
@@ -68,16 +58,16 @@ export default function HeroSection({
     () => calcDailyKg(categories, trackerValues),
     [categories, trackerValues],
   );
-  const annualTonnes = (dailyKg * 365) / 1000;
-  const vsAvgPct = ((dailyKg / GLOBAL_DAILY_KG) * 100).toFixed(0);
-  const belowAvg = dailyKg < GLOBAL_DAILY_KG;
+  const annualTonnes = (dailyKg * DAYS_PER_YEAR) / 1000;
+  const vsAvgPct = ((dailyKg / GLOBAL_AVERAGE_KG_DAY) * 100).toFixed(0);
+  const belowAvg = dailyKg < GLOBAL_AVERAGE_KG_DAY;
 
   // Per-category breakdown for mini-bars
   const breakdown = useMemo(
     () =>
       categories.map((cat) => ({
         cat,
-        kg: getCategoryDailyKg(cat, trackerValues),
+        kg: kgPerDayForCategory(cat, trackerValues[cat.id]),
       })),
     [categories, trackerValues],
   );
@@ -167,7 +157,7 @@ export default function HeroSection({
               <div className="space-y-1">
                 <div className="flex justify-between font-mono text-[8px] text-cream/40 uppercase">
                   <span>0 kg</span>
-                  <span>Global avg: {GLOBAL_DAILY_KG.toFixed(1)} kg</span>
+                  <span>Global avg: {GLOBAL_AVERAGE_KG_DAY.toFixed(1)} kg</span>
                 </div>
                 <div className="h-2.5 bg-white/5 rounded-full overflow-hidden relative">
                   {/* Global average marker */}
@@ -178,7 +168,7 @@ export default function HeroSection({
                   <div
                     className={`h-full rounded-full transition-all duration-700 ${belowAvg ? 'bg-neon' : 'bg-orange-400'}`}
                     style={{
-                      width: `${Math.min(150, (dailyKg / GLOBAL_DAILY_KG) * 100).toFixed(1)}%`,
+                      width: `${Math.min(150, (dailyKg / GLOBAL_AVERAGE_KG_DAY) * 100).toFixed(1)}%`,
                     }}
                   />
                 </div>
@@ -186,8 +176,8 @@ export default function HeroSection({
                   className={`font-mono text-[9px] uppercase font-bold ${belowAvg ? 'text-neon' : 'text-orange-400'}`}
                 >
                   {belowAvg
-                    ? `✓ ${(GLOBAL_DAILY_KG - dailyKg).toFixed(1)} kg below global average (${vsAvgPct}%)`
-                    : `⚠ ${(dailyKg - GLOBAL_DAILY_KG).toFixed(1)} kg above global average (${vsAvgPct}%)`}
+                    ? `✓ ${(GLOBAL_AVERAGE_KG_DAY - dailyKg).toFixed(1)} kg below global average (${vsAvgPct}%)`
+                    : `⚠ ${(dailyKg - GLOBAL_AVERAGE_KG_DAY).toFixed(1)} kg above global average (${vsAvgPct}%)`}
                 </div>
               </div>
 
